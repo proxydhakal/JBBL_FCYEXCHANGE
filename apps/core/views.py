@@ -320,21 +320,26 @@ class FCYRequestEditView(LoginRequiredMixin,View):
 
     def post(self, request, *args, **kwargs):
         id = self.kwargs.get('id') 
-        
         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
-        
-        if 'action' in request.POST:
-            if request.POST['action'] == 'Approved':
-                fcymaster.status = 'Approved'
-            else:
-                fcymaster.status = 'Rejected'
-            
-            fcymaster.remarks = request.POST.get('remarks', '')
-            fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
-            fcymaster.updateDate = current_datetime
-            fcymaster.save()
-            
-            messages.success(request, "Operation Successful!")
+        if fcymaster.enteredBy == request.user.email:
+            if 'action' in request.POST:
+                if request.POST['action'] == 'Approved':
+                    fcymaster.status = 'Approved'
+                elif request.POST['action'] == 'Rejected':
+                    fcymaster.status = 'Rejected'
+                else:
+                    messages.error(request, "Operation Unsucessfull!")
+                    return redirect('/fcyexchangerequest/')
+                
+                fcymaster.remarks = request.POST.get('remarks', '')
+                fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                fcymaster.updateDate = current_datetime
+                fcymaster.save()
+                
+                messages.success(request, "Operation Successful!")
+                return redirect('/fcyexchangerequest/')
+        else:
+            messages.error(request, "Unauthorized User!")
             return redirect('/fcyexchangerequest/')
 
 
