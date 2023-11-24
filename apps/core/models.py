@@ -54,35 +54,36 @@ class CurrencyTableResource(resources.ModelResource):
 
 
 class FCYExchangeRequestMaster(models.Model):
-    refrenceid          = models.CharField(max_length=20, unique=True)  # Field to store the unique ID with prefix
+    refrenceid          = models.CharField(max_length=20, unique=True)  
     date                = models.DateField()
-    preferredBranch     = models.CharField(max_length=10, null=False, blank=False)  # You can adjust the max_length as needed
-    totalEquivalentNPR  = models.DecimalField(max_digits=20, decimal_places=2, null=False, blank=False)  # Adjust max_digits and decimal_places
-    totalEquivalentNPRToWords = models.CharField(max_length=300, null=False, blank=False)  # You can adjust the max_length as needed
-    status              = models.CharField(max_length=50, null=False, blank=False)  # You can adjust the max_length as needed
-    enteredBy           = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    preferredBranch     = models.CharField(max_length=10, null=False, blank=False)  
+    totalEquivalentNPR  = models.DecimalField(max_digits=20, decimal_places=2, null=False, blank=False)  
+    totalEquivalentNPRToWords = models.CharField(max_length=300, null=False, blank=False)  
+    status              = models.CharField(max_length=50, null=False, blank=False)
+    remarks             = models.TextField(default='-')
+    enteredBy           = models.CharField(max_length=255)  
     enterDate           = models.DateTimeField()
-    updatedBy           = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    updatedBy           = models.CharField(max_length=255)  
     updateDate          = models.DateTimeField()
-    deletedBy           = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    deletedBy           = models.CharField(max_length=255)  
     deletedDate         = models.DateTimeField()
 
     def __str__(self):
-        return f"{self.date} - {self.preferredBranch}"  # Display a meaningful representation of the object
+        return f"{self.refrenceid} - {self.date} - {self.preferredBranch}"  
     
 
     def save(self, *args, **kwargs):
-        # Generate a unique ID with a prefix
-        if not self.refrenceid:  # Check if the unique ID is not already set
-            prefix = "JBBL-FCY-"  # Replace "PREFIX" with your desired prefix
-            # Logic to generate a unique ID, such as combining prefix and an incremented value
+        
+        if not self.refrenceid:  
+            prefix = "JBBL-FCY-"  
+            
             latest_id = FCYExchangeRequestMaster.objects.filter(refrenceid__startswith=prefix).order_by('-refrenceid').first()
             if latest_id:
                 last_id_number = int(latest_id.refrenceid[len(prefix):])
             else:
                 last_id_number = 0
             new_id_number = last_id_number + 1
-            self.refrenceid = f"{prefix}{new_id_number:07}"  # Adjust the format of the ID as needed
+            self.refrenceid = f"{prefix}{new_id_number:07}" 
         super(FCYExchangeRequestMaster, self).save(*args, **kwargs)
 
     class Meta:
@@ -91,22 +92,21 @@ class FCYExchangeRequestMaster(models.Model):
 
 class FCYDenoMasterTable(models.Model):
     masterid        = models.IntegerField()
-    currency        = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    currency        = models.CharField(max_length=255)  
     deno            = models.IntegerField()
     unit            = models.IntegerField()
     rate            = models.DecimalField(max_digits=20, decimal_places=2)
-    equivalentNPR   = models.DecimalField(max_digits=20, decimal_places=2)  # Adjust max_digits and decimal_places
-    status          = models.CharField(max_length=50)  # You can adjust the max_length as needed
-    enteredBy       = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    equivalentNPR   = models.DecimalField(max_digits=20, decimal_places=2)  
+    status          = models.CharField(max_length=50)  
+    enteredBy       = models.CharField(max_length=255)  
     enterDate       = models.DateTimeField()
-    updatedBy       = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    updatedBy       = models.CharField(max_length=255)  
     updateDate      = models.DateTimeField()
-    deletedBy       = models.CharField(max_length=255)  # You can adjust the max_length as needed
+    deletedBy       = models.CharField(max_length=255)  
     deletedDate     = models.DateTimeField()
 
     def __str__(self):
-        return f"{self.currency} - {self.deno}"  # Display a meaningful representation of the object
-
+        return f"{self.currency} - {self.deno}"  
     class Meta:
         verbose_name = "FCY DENO MASTER TABLE"
         verbose_name_plural = "FCY DENO MASTER TABLES"

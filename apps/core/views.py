@@ -23,6 +23,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.db.models import F, Subquery, OuterRef,ExpressionWrapper, CharField, Value
 from django.db.models.functions import Concat
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -68,7 +70,7 @@ def dashboard(request):
     return render(request, template_name, context)
 
 class FCYExchangeRequestCreateView(LoginRequiredMixin,View):
-    template_name = 'core/dashboard/create_fcy_exchange.html'  # Update with your template path
+    template_name = 'core/dashboard/create_fcy_exchnage.html'  # Update with your template path
 
     def get(self, request):
         form = FCYExchangeRequestMasterForm()
@@ -317,6 +319,71 @@ class FCYRequestEditView(LoginRequiredMixin,View):
         return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails':fcydenodetails})
 
     def post(self, request, *args, **kwargs):
-        return HttpResponse('POST request!')
+        id = self.kwargs.get('id') 
+        
+        fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
+        
+        if 'action' in request.POST:
+            if request.POST['action'] == 'Approved':
+                fcymaster.status = 'Approved'
+            else:
+                fcymaster.status = 'Rejected'
+            
+            fcymaster.remarks = request.POST.get('remarks', '')
+            fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+            fcymaster.updateDate = current_datetime
+            fcymaster.save()
+            
+            messages.success(request, "Operation Successful!")
+            return redirect('/fcyexchangerequest/')
 
 
+@require_POST
+def update_fcy_data(request, fcy_id, masterId):
+    fcy = get_object_or_404(FCYDenoMasterTable, id=fcy_id)
+    fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=masterId)
+    if 'deno' in request.POST:
+        fcy.deno = request.POST['deno']
+    if 'rate' in request.POST:
+        fcy.rate = request.POST['rate']
+    if 'unit' in request.POST:
+        fcy.unit = request.POST['unit']
+    if 'equivalentNPR' in request.POST:
+        fcy.equivalentNPR = request.POST['equivalentNPR']
+    if 'totalEquivalentNPR' in request.POST:
+        fcymaster.totalEquivalentNPR = request.POST['totalEquivalentNPR']
+    if 'totalEquivalentNPRToWords' in request.POST:
+        fcymaster.totalEquivalentNPRToWords = request.POST['totalEquivalentNPRToWords']
+    fcy.updatedBy =  request.user.email if request.user.is_authenticated else ''
+    fcy.updateDate = current_datetime
+    fcymaster.updatedBy =  request.user.email if request.user.is_authenticated else ''
+    fcymaster.updateDate = current_datetime
+    fcymaster.save()
+    fcy.save()
+    
+    return JsonResponse({'message': 'Data updated successfully'})
+
+# def update_fcy_data(request, fcy_id, master_id):
+#     if request.method == 'POST':
+#         fcy = get_object_or_404(FCYDenoMasterTable, id=fcy_id)
+#         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=master_id)
+
+#         # Update FCYDenoMasterTable fields
+#         fcy.deno = request.POST.get('deno', fcy.deno)
+#         fcy.rate = request.POST.get('rate', fcy.rate)
+#         fcy.unit = request.POST.get('unit', fcy.unit)
+#         fcy.equivalentNPR = request.POST.get('equivalentNPR', fcy.equivalentNPR)
+#         fcy.updatedBy = request.user.email if request.user.is_authenticated else ''
+#         fcy.updateDate = current_datetime
+#         fcy.save()
+
+#         # Update FCYExchangeRequestMaster fields
+#         fcymaster.totalEquivalentNPR = request.POST.get('totalEquivalentNPR', fcymaster.totalEquivalentNPR)
+#         fcymaster.totalEquivalentNPRToWords = request.POST.get('totalEquivalentNPRToWords', fcymaster.totalEquivalentNPRToWords)
+#         fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+#         fcymaster.updateDate = current_datetime
+#         fcymaster.save()
+
+#         return JsonResponse({'message': 'Data updated successfully'})
+
+#     return JsonResponse({'error': 'Invalid request method'}, status=400)

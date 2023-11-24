@@ -59,7 +59,7 @@
                         <div class="col-lg-12 mt-4">
                             <!-- Area chart example-->
                             <div class="card mb-4">
-                                <div class="card-header text-center">Denomination Detail's</div>
+                                <div class="card-header text-center">Denomination Details</div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive table-billing-history">
                                         <table class="table mb-0">
@@ -120,10 +120,9 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Action<b class="text-danger"> *</b></label>
                             <select class="form-select form-control" id="action" name="action" aria-label="Currency">
-                                <option selected disabled>Select Option</option>
+                                <option>Select Option</option>
                                 <option value="Approved">Approved</option>
                                 <option value="Rejected">Reject</option>
-                                <option value="Save">Save and Continue</option>
                             </select>
                         </div>
                         <div class="col-md-8 mb-3 remarksdiv" id="remarksdiv">
@@ -131,8 +130,7 @@
                             <input class="form-control" type="text"  id="remarks" name="remarks" value="" />
                         </div>
                     </div>
-                    <button class="btn btn-primary" id="submit" type="submit">Submit</button>
-                    <button class="btn btn-secondary" id="save" type="submit">Save</button>
+                    <button class="btn btn-primary" type="submit">Submit</button>
                 </form>
             </div>
         </div>
@@ -142,7 +140,7 @@
 <script>
     $(document).ready(function () {
         $('#remarksdiv').hide();
-        $('#save').hide();
+
         $('#action').change(function () {
             var selectedAction = $(this).val();
             if (selectedAction === 'Approved' || selectedAction === 'Rejected') {
@@ -150,121 +148,10 @@
             } else {
                 $('#remarksdiv').hide();
             }
-            if (selectedAction === 'Save') {
-                $('#save').show();
-                $('#submit').hide();
-            } else {
-                $('#save').hide();
-                $('#submit').show();
-            }
         });
     });
 </script>
 <script>
-    $(document).ready(function() {
-        function updateEquivalentNPR(row) {
-            var rate = parseFloat(row.find("td:eq(3)").text());
-            var unit = parseFloat(row.find("td:eq(2)").text());
-            var deno = parseFloat(row.find("td:eq(1)").text());
-    
-            if (!isNaN(rate) && !isNaN(unit) && !isNaN(deno)) {
-                var equivalentNPR = rate * unit * deno;
-                row.find("td:eq(4)").text(equivalentNPR.toFixed(2));
-                return equivalentNPR;
-            } else {
-                return NaN;
-            }
-        }
-    
-        function updateTotalEquivalentNPR() {
-            var totalEquivalentNPR = 0;
-            $("tbody tr").each(function() {
-                var equivalentNPR = updateEquivalentNPR($(this));
-                if (!isNaN(equivalentNPR)) {
-                    totalEquivalentNPR += equivalentNPR;
-                }
-            });
-    
-            $("#totalEquivalentNPR").val(totalEquivalentNPR.toFixed(2));
-        }
-    
-        $("tbody").on("click", ".editButton", function(event) {
-            event.preventDefault();
-    
-            var row = $(this).closest("tr");
-            var columnsToEdit = [3, 2, 1]; // Indexes of columns rate, unit, and deno
-    
-            row.find("td:not(:last-child)").each(function(index) {
-                if (columnsToEdit.indexOf(index) !== -1) {
-                    var cellText = $(this).text();
-                    $(this).html("<input class='form-controls' type='text' value='" + cellText + "'>");
-                }
-            });
-    
-            row.find(".editButton").addClass("saveButton").removeClass("editButton").html('<i class="fas fa-save"></i>');
-        });
-    
-        $("tbody").on("click", ".saveButton", function(event) {
-            event.preventDefault();
-    
-            var row = $(this).closest("tr");
-            row.find("input").each(function() {
-                var cellText = $(this).val();
-                $(this).parent("td").text(cellText);
-            });
-    
-            row.find(".saveButton").addClass("editButton").removeClass("saveButton").html('<i class="fas fa-edit"></i>');
-    
-            updateEquivalentNPR(row);
-            updateTotalEquivalentNPR();
-    
-            // Update totalEquivalentNPRToWords here
-            var totalEquivalentNPRValue = $('#totalEquivalentNPR').val();
-    
-            if (totalEquivalentNPRValue.trim() !== '') {
-                var csrftoken = getCookie('csrftoken');
-    
-                $.ajax({
-                    method: 'POST',
-                    url: '/convert_to_words/', // Replace with your Django view endpoint
-                    data: {
-                        'totalEquivalentNPR': totalEquivalentNPRValue
-                    },
-                    dataType: 'json',
-                    headers: {
-                        'X-CSRFToken': csrftoken
-                    },
-                    success: function(data) {
-                        var totalEquivalentNPRToWords = data.totalEquivalentNPRToWords || 'N/A';
-                        $('#totalEquivalentNPRToWords').val(totalEquivalentNPRToWords);
-                    }
-                });
-            } else {
-                $('#totalEquivalentNPRToWords').val('');
-            }
-        });
-    
-        $("tbody").on("input", "td:lt(4)", function() {
-            var row = $(this).closest("tr");
-            updateEquivalentNPR(row);
-            updateTotalEquivalentNPR();
-        });
-        
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    });
-        
+  $(document).ready((function(){function t(t){var e=parseFloat(t.find("td:eq(3)").text()),a=parseFloat(t.find("td:eq(2)").text()),n=parseFloat(t.find("td:eq(1)").text());if(isNaN(e)||isNaN(a)||isNaN(n))return NaN;var o=e*a*n;return t.find("td:eq(4)").text(o.toFixed(2)),o}function e(){var e=0;$("tbody tr").each((function(){var a=t($(this));isNaN(a)||(e+=a)})),$("#totalEquivalentNPR").val(e.toFixed(2))}function a(t){var e=null;if(document.cookie&&""!==document.cookie)for(var a=document.cookie.split(";"),n=0;n<a.length;n++){var o=a[n].trim();if(o.substring(0,t.length+1)===t+"="){e=decodeURIComponent(o.substring(t.length+1));break}}return e}$("tbody").on("click",".editButton",(function(t){t.preventDefault();var e=$(this).closest("tr"),a=[3,2,1];e.find("td:not(:last-child)").each((function(t){if(-1!==a.indexOf(t)){var e=$(this).text();$(this).html("<input class='form-controls' type='text' name='"+function(t){switch(t){case 1:return"deno";case 2:return"unit";case 3:return"rate";default:return""}}(t)+"' value='"+e+"'>")}})),e.find(".editButton").addClass("saveButton").removeClass("editButton").html('<i class="fas fa-save"></i>')})),$("tbody").on("click",".saveButton",(function(n){n.preventDefault(),(o=$(this).closest("tr")).find("input").each((function(){var t=$(this).val();$(this).parent("td").text(t)})),o.find(".saveButton").addClass("editButton").removeClass("saveButton").html('<i class="fas fa-edit"></i>'),t(o),e();var o,r=$("#totalEquivalentNPR").val(),i=(o=$(this).closest("tr")).attr("id"),s=$("#deno-"+i).text(),u=$("#unit-"+i).text(),d=$("#rate-"+i).text();if(""===s||"0"===s||""===u||"0"===u||""===d||"0"===d)alert("Error: Fields cannot be empty or zero.");else{var l=$("#equivalentNPR-"+i).text();if(""!==r.trim()){var c=a("csrftoken");$.ajax({method:"POST",url:"/convert_to_words/",data:{totalEquivalentNPR:r},dataType:"json",headers:{"X-CSRFToken":c},success:function(t){var e=t.totalEquivalentNPRToWords||"N/A";$("#totalEquivalentNPRToWords").val(e);var n={deno:s,unit:u,rate:d,equivalentNPR:l,totalEquivalentNPRToWords:e,totalEquivalentNPR:r},o=a("csrftoken");$.ajax({method:"POST",url:"/update_fcy_data/"+i+"/{{ fcyrequest.id }}/",data:n,dataType:"json",headers:{"X-CSRFToken":o},success:function(t){toastr.success("Data updated successfully")},error:function(t){toastr.error("Error updating data")},complete:function(t,e){"error"!==e&&window.location.reload()}})}})}else $("#totalEquivalentNPRToWords").val("")}})),$("tbody").on("input","td:lt(4)",(function(){t($(this).closest("tr")),e()}))}));
 </script>
 {% endblock main %}

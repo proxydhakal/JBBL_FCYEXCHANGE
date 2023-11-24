@@ -29,6 +29,23 @@
                                 <div><strong>Customer's Name:</strong>
                                 {{fcyrequest.customer_fullname}}</div>
                             </li>
+                            <li class="list-group-item">
+                                {% if fcyrequest.status  == 'Rejected'  %}
+                                    <div><strong>Rejected Date:</strong>
+                                {% else %}
+                                    <div><strong>Approved Date:</strong>
+                                {% endif %}
+                                {% if fcyrequest.status  == 'Requested'  %}
+                               
+                                {% elif fcyrequest.status == 'Rejected' %}
+                                    <p>{{fcyrequest.updateDate}}</p>
+                                {% elif fcyrequest.status == 'Approved' %}
+                                    <p>{{fcyrequest.updateDate}}</p>
+                                {% else %}
+                                
+                                {% endif %}
+                                </div>
+                            </li>
                         </ul>
                     </div>
                     <div class="col-md-6">
@@ -45,6 +62,19 @@
                                 <p class="badge bg-danger text-white rounded-pill">Rejected</p>
                                 {% elif fcyrequest.status == 'Approved' %}
                                 <p class="badge bg-success text-white rounded-pill">Approved</p>
+                                {% else %}
+                                
+                                {% endif %}
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Remarks:</strong>
+                                {% if fcyrequest.status  == 'Requested'  %}
+                               
+                                {% elif fcyrequest.status == 'Rejected' %}
+                                    <p>{{fcyrequest.remarks}}</p>
+                                {% elif fcyrequest.status == 'Approved' %}
+                                    <p>{{fcyrequest.remarks}}</p>
                                 {% else %}
                                 
                                 {% endif %}

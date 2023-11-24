@@ -53,7 +53,10 @@
                                     <td></td>
                                 {% endif %}
                                 <td>
+                                    {% if request.status == 'Approved' or request.status == 'Rejected' %}
+                                    {% else %}
                                     <a href="{% url "fcyexchangeedit" request.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                    {% endif %}
                                     <a href="{% url "fcyexchangedetail"  request.id %}" class="btn-sm btn-secondary"><i class="far fa-eye"></i></a>
                                 </td>
                             </tr>

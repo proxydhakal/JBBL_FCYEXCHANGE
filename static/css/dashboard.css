@@ -2597,6 +2597,7 @@ textarea.form-control-lg {
   border-radius: 0.35rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
+
 .form-select, .dataTable-selector {
   display: block;
   width: 100%;
