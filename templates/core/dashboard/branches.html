@@ -1,0 +1,59 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+        <div class="container-xl px-4">
+            <div class="page-header-content pt-4">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-auto mt-4">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="filter"></i></div>
+                            List of FCY Exchange Branches
+                        </h1>
+                        <div class="page-header-subtitle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mt-n10">
+        <div class="card mb-4">
+            <div class="card-header">Branches Details</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="datatablesSimple">
+                        <thead>
+                            <tr>
+                                <th>Branch Name</th>
+                                <th>Branch Code</th>
+                                <th>Branch Incharge</th>
+                                <th>Branch Location</th>
+                                <th>Branch Phone</th>
+                                <th>Mobile Number</th>
+                                <th>Branch Incharge Email</th>
+                                <th>Google Plus Code</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for branch in branches %}
+                            <tr>
+                                <td>{{ branch.Branch_Name }}</td>
+                                <td>{{ branch.Branch_code }}</td>
+                                <td>{{ branch.Branch_Incharge }}</td>
+                                <td>{{ branch.Branch_Location }}</td>
+                                <td>{{ branch.Branch_Phone }}</td>
+                                <td>{{ branch.Mobile_Number }}</td>
+                                <td>{{ branch.Branch_Incharge_Email }}</td>
+                                <td>{{ branch.Google_Plus_Code }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock main %}

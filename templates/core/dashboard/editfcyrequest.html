@@ -1,0 +1,270 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <div class="container-xl px-4 mt-5">
+        <!-- Knowledge base article-->
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center">
+                <a class="btn btn-transparent-dark btn-icon" href="{% url "fcyexchangerequest" %}"><i data-feather="arrow-left"></i></a>
+                <div class="ms-3"><h2 class="my-3">Modify Transaction Details</h2></div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <div><strong>Request Id:</strong>
+                                {{ fcyrequest.refrenceid }}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Requested Date:</strong>
+                                {{fcyrequest.date}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Branch Name:</strong>
+                                {{fcyrequest.prefBranchName}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Customer's Name:</strong>
+                                {{fcyrequest.customer_fullname}}</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <div><strong>Email:</strong>
+                                {{fcyrequest.enteredBy}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Status:</strong>
+                                {% if fcyrequest.status  == 'Requested'  %}
+                                <p class="badge bg-warning text-white rounded-pill">Pending</p>
+                                {% elif fcyrequest.status == 'Rejected' %}
+                                <p class="badge bg-danger text-white rounded-pill">Rejected</p>
+                                {% elif fcyrequest.status == 'Approved' %}
+                                <p class="badge bg-success text-white rounded-pill">Approved</p>
+                                {% else %}
+                                
+                                {% endif %}
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <form  method="POST" action="{% url 'fcyexchangeedit' fcyrequest.id %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-lg-12 mt-4">
+                            <!-- Area chart example-->
+                            <div class="card mb-4">
+                                <div class="card-header text-center">Denomination Detail's</div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive table-billing-history">
+                                        <table class="table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Currency</th>
+                                                    <th>Deno</th>
+                                                    <th>Unit</th>
+                                                    <th>Rate</th>
+                                                    <th>Equivalent NPR</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for fcy in fcydenodetails %}
+                                                    <tr id="{{fcy.id}}">
+                                                        <td id="currency-{{fcy.id}}">{{fcy.currency}}</td>
+                                                        <td id ="deno-{{fcy.id}}">{{fcy.deno}}</td>
+                                                        <td id ="unit-{{fcy.id}}">{{fcy.unit}}</td>
+                                                        <td id="rate-{{fcy.id}}">{{fcy.rate}}</td>
+                                                        <td id="equivalentNPR-{{fcy.id}}">{{fcy.equivalentNPR}}</td>
+                                                        <td><button class="btn-sm btn-primary editButton"><i class="fas fa-edit"></i></button></td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-lg-8">
+                            <label class="form-label">Total Equivalent NPR in Words<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPRToWords.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPRToWords" name="totalEquivalentNPRToWords" value="{{ fcyrequest.totalEquivalentNPRToWords }}" readonly />
+                            {% if form.totalEquivalentNPRToWords.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPRToWords.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-1"></div>
+                        <div class="col-lg-3">
+                            <label class="form-label">Total Equivalent NPR<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPR.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPR" name="totalEquivalentNPR" value="{{ fcyrequest.totalEquivalentNPR }}"  readonly/>
+                            {% if form.totalEquivalentNPR.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPR.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Action<b class="text-danger"> *</b></label>
+                            <select class="form-select form-control" id="action" name="action" aria-label="Currency">
+                                <option selected disabled>Select Option</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Reject</option>
+                                <option value="Save">Save and Continue</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 mb-3 remarksdiv" id="remarksdiv">
+                            <label class="form-label">Remarks<b class="text-danger"> *</b></label>
+                            <input class="form-control" type="text"  id="remarks" name="remarks" value="" />
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="submit" type="submit">Submit</button>
+                    <button class="btn btn-secondary" id="save" type="submit">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#remarksdiv').hide();
+        $('#save').hide();
+        $('#action').change(function () {
+            var selectedAction = $(this).val();
+            if (selectedAction === 'Approved' || selectedAction === 'Rejected') {
+                $('#remarksdiv').show();
+            } else {
+                $('#remarksdiv').hide();
+            }
+            if (selectedAction === 'Save') {
+                $('#save').show();
+                $('#submit').hide();
+            } else {
+                $('#save').hide();
+                $('#submit').show();
+            }
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        function updateEquivalentNPR(row) {
+            var rate = parseFloat(row.find("td:eq(3)").text());
+            var unit = parseFloat(row.find("td:eq(2)").text());
+            var deno = parseFloat(row.find("td:eq(1)").text());
+    
+            if (!isNaN(rate) && !isNaN(unit) && !isNaN(deno)) {
+                var equivalentNPR = rate * unit * deno;
+                row.find("td:eq(4)").text(equivalentNPR.toFixed(2));
+                return equivalentNPR;
+            } else {
+                return NaN;
+            }
+        }
+    
+        function updateTotalEquivalentNPR() {
+            var totalEquivalentNPR = 0;
+            $("tbody tr").each(function() {
+                var equivalentNPR = updateEquivalentNPR($(this));
+                if (!isNaN(equivalentNPR)) {
+                    totalEquivalentNPR += equivalentNPR;
+                }
+            });
+    
+            $("#totalEquivalentNPR").val(totalEquivalentNPR.toFixed(2));
+        }
+    
+        $("tbody").on("click", ".editButton", function(event) {
+            event.preventDefault();
+    
+            var row = $(this).closest("tr");
+            var columnsToEdit = [3, 2, 1]; // Indexes of columns rate, unit, and deno
+    
+            row.find("td:not(:last-child)").each(function(index) {
+                if (columnsToEdit.indexOf(index) !== -1) {
+                    var cellText = $(this).text();
+                    $(this).html("<input class='form-controls' type='text' value='" + cellText + "'>");
+                }
+            });
+    
+            row.find(".editButton").addClass("saveButton").removeClass("editButton").html('<i class="fas fa-save"></i>');
+        });
+    
+        $("tbody").on("click", ".saveButton", function(event) {
+            event.preventDefault();
+    
+            var row = $(this).closest("tr");
+            row.find("input").each(function() {
+                var cellText = $(this).val();
+                $(this).parent("td").text(cellText);
+            });
+    
+            row.find(".saveButton").addClass("editButton").removeClass("saveButton").html('<i class="fas fa-edit"></i>');
+    
+            updateEquivalentNPR(row);
+            updateTotalEquivalentNPR();
+    
+            // Update totalEquivalentNPRToWords here
+            var totalEquivalentNPRValue = $('#totalEquivalentNPR').val();
+    
+            if (totalEquivalentNPRValue.trim() !== '') {
+                var csrftoken = getCookie('csrftoken');
+    
+                $.ajax({
+                    method: 'POST',
+                    url: '/convert_to_words/', // Replace with your Django view endpoint
+                    data: {
+                        'totalEquivalentNPR': totalEquivalentNPRValue
+                    },
+                    dataType: 'json',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    success: function(data) {
+                        var totalEquivalentNPRToWords = data.totalEquivalentNPRToWords || 'N/A';
+                        $('#totalEquivalentNPRToWords').val(totalEquivalentNPRToWords);
+                    }
+                });
+            } else {
+                $('#totalEquivalentNPRToWords').val('');
+            }
+        });
+    
+        $("tbody").on("input", "td:lt(4)", function() {
+            var row = $(this).closest("tr");
+            updateEquivalentNPR(row);
+            updateTotalEquivalentNPR();
+        });
+        
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+        
+</script>
+{% endblock main %}

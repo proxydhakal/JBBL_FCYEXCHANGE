@@ -1,0 +1,170 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-compact page-header-light border-bottom bg-white mb-4 p-3">
+        <div class="container-xl px-4">
+            <div class="page-header-content">
+                <div class="row align-items-center justify-content-between pt-3">
+                    <div class="col-auto mb-3">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="user"></i></div>
+                            Account Settings - Profile
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mt-4">
+        <!-- Account page navigation-->
+        <nav class="nav nav-borders">
+            <a class="nav-link ms-0" href="{% url 'accounts:profile' request.user.email %}">Profile</a>
+            <a class="nav-link" href="{% url "accounts:setting" %}">Security</a>
+            <a class="nav-link" href="{% url "accounts:notification" %}">Notifications</a>
+        </nav>
+        <hr class="mt-0 mb-4" />
+        <form method="POST" action="{% url 'accounts:profile' request.user.email %}"  enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-xl-4 mb-3">
+                    <!-- Profile picture card-->
+                    <div class="card mb-4 mb-xl-0">
+                        <div class="card-header">Profile Picture</div>
+                        <div class="card-body text-center">
+                            <!-- Profile picture image-->
+                            <img class="img-account-profile rounded-circle mb-2" id="profile-image" src="{{userprofiledata.profile_image.url}}" height="100" width="165" alt="Profile Image" />
+                            <!-- Profile picture help block-->
+                            <div class="small font-italic text-muted mb-4">JPG or PNG no larger than 5 MB</div>
+                            <!-- Profile picture upload button-->
+                            <input id="input-id" type="file" name="profile_image" class="file" data-preview-file-type="text">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-8">
+                    <!-- Account details card-->
+                    <div class="card mb-4">
+                        <div class="card-header">Account Details</div>
+                        <div class="card-body">
+
+                                <!-- Form Row-->
+                                <div class="row gx-3 mb-3">
+                                    <!-- Form Group (first name)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputFirstName">First name</label>
+                                        <input class="form-control" id="inputFirstName" type="text" name="first_name" placeholder="Enter your first name" value="{{userprofiledata.first_name}}" />
+                                    </div>
+                                    <!-- Form Group (last name)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputLastName">Last name</label>
+                                        <input class="form-control" id="inputLastName" type="text" name="last_name" placeholder="Enter your last name" value="{{userprofiledata.last_name}}" />
+                                    </div>
+                                </div>
+                                <!-- Form Row-->
+                                <div class="row gx-3 mb-3">
+                                    <!-- Form Group (first name)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputUsername">Username (Client Code)</label>
+                                        <input class="form-control" id="inputUsername" name="client_code" type="text" placeholder="Enter your username" value="{{userprofiledata.client_code}}" />
+                                    </div>
+                                    <!-- Form Group (last name)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputUsername">Branch</label>
+                                        <select class="form-select form-control md" id="form-selects" name="branch" aria-label="Branch">
+                                            <option selected disabled>Select Prefered Branch</option>
+                                            {% for branch in branches %}
+                                            <option value="{{branch.BranchCode}}" {% if branch.BranchCode == userprofiledata.branch %}
+                                            selected
+                                        {% endif %}>{{branch.BranchName}}</option>
+                                            {% endfor %}
+                                        </select>
+                    
+                                    </div>
+                                </div>
+                                <!-- Form Row        -->
+                                <div class="row gx-3 mb-3">
+                                    <!-- Form Group (organization name)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputOrgName">Organization name</label>
+                                        <input class="form-control" id="inputOrgName" type="text" name="company" placeholder="Enter your organization name" value="{{userprofiledata.company}}" />
+                                    </div>
+                                    <!-- Form Group (location)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputLocation">Location</label>
+                                        <input class="form-control" id="inputLocation" type="text" name="location" placeholder="Enter your location" value="{{userprofiledata.location}}" />
+                                    </div>
+                                </div>
+                                <!-- Form Group (email address)-->
+                                <div class="mb-3">
+                                    <label class="small mb-1" for="inputEmailAddress">Email address</label>
+                                    <input class="form-control" id="inputEmailAddress" type="email" placeholder="Enter your email address" readonly value="{{userprofiledata.email}}" />
+                                </div>
+                                <!-- Form Row-->
+                                <div class="row gx-3 mb-3">
+                                    <!-- Form Group (phone number)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputPhone">Phone number</label>
+                                        <input class="form-control" id="inputPhone" type="text" name="phone" placeholder="Enter your phone number" value="{{userprofiledata.phone}}" />
+                                    </div>
+                                    <!-- Form Group (birthday)-->
+                                    <div class="col-md-6">
+                                        <label class="small mb-1" for="inputBirthday">Birthday</label>
+                                        <input class="form-control" id="date-picker" type="text" name="dob" placeholder="Enter your birthday" value="{{ userprofiledata.dob|date:"Y-m-d" }}" />
+                                    </div>
+                                </div>
+                                <!-- Save changes button-->
+                                <button class="btn btn-primary" type="submit">Save changes</button>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    $(document).ready(function() {
+        // Listen for changes to the file input
+        $("#input-id").on("change", function() {
+            var input = this;
+    
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+    
+                reader.onload = function(e) {
+                    $("#profile-image").attr("src", e.target.result);
+                };
+    
+                reader.readAsDataURL(input.files[0]);
+            }
+        });
+    });
+</script>
+<script>
+    flatpickr("#date-picker", {
+        dateFormat: "Y-m-d",
+        maxDate: "today" // Disable future dates
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        // Get the current URL
+        var currentUrl = window.location.href;
+    
+        // Loop through each link and check if the URL matches
+        $('.nav-link').each(function() {
+            var link = $(this).attr('href');
+            
+            // Check if the current URL contains the link URL
+            if (currentUrl.includes(link)) {
+                $(this).addClass('active');
+            }
+        });
+    });
+</script>
+{% endblock main %}
+
+

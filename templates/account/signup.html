@@ -1,0 +1,136 @@
+{% extends "partials/base.html" %} 
+{% load static %}
+{% block navbar %}
+{% include "partials/navbar.html" %}
+{% endblock navbar %}
+{% block main %}
+<link rel="stylesheet" href="{% static 'css/style1.css' %}">
+<section class="utility">
+<div class="container">
+    <div class="card bg-light mx-auto mt-5 mb-5">
+        <div class="card-header justify-content-center">
+            <h3 class="fw-light my-4">Create Account</h3>
+            <p class="text-center">Get started with your free account, Register Now!</p>
+        </div>
+        <div class="card-body">
+            <!-- Registration form-->
+            <form method="POST" action="{% url 'account_signup' %}">
+                {% csrf_token %}
+                <!-- Form Row-->
+                <div class="row gx-3">
+                    <div class="col-md-6">
+                        <!-- Form Group (first name)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputFirstName">First Name</label>
+                            <input class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" id="inputFirstName" name="first_name" type="text" placeholder="Enter first name" />
+                            {% if form.first_name.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.first_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Form Group (last name)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputLastName">Last Name</label>
+                            <input class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" id="inputLastName" name="last_name" type="text" placeholder="Enter last name" />
+                            {% if form.last_name.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.last_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Form Group (email address)            -->
+                <div class="mb-3">
+                    <label class="small mb-1" for="inputEmailAddress">Email</label>
+                    <input class="form-control {% if form.email.errors %}is-invalid{% endif %}" id="inputEmailAddress" type="email" name="email" aria-describedby="emailHelp" placeholder="Enter email address" />
+                    {% if form.email.errors %}
+                    <span class="text-danger">
+                            {% for error in form.email.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </span>
+                    {% endif %}
+                </div>
+                <!-- Form Row    -->
+                <div class="row gx-3">
+                    <div class="col-md-6">
+                        <!-- Form Group (first name)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputFirstName">Company Name</label>
+                            <input class="form-control {% if form.company.errors %}is-invalid{% endif %}" id="inputFirstName" name="company" type="text" placeholder="Enter company name" />
+                            {% if form.company.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.company.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Form Group (last name)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputLastName">Mobile Number</label>
+                            <input class="form-control {% if form.phone.errors %}is-invalid{% endif %}" id="inputLastName" name="phone" type="text" placeholder="Enter mobile number" />
+                            {% if form.phone.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.phone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row gx-3">
+                    <div class="col-md-6">
+                        <!-- Form Group (password)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputPassword">Password</label>
+                            <input class="form-control {% if form.password1.errors %}is-invalid{% endif %}" id="inputPassword" name="password1" type="password" placeholder="Enter password" />
+                            {% if form.password1.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.password1.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Form Group (confirm password)-->
+                        <div class="mb-3">
+                            <label class="small mb-1" for="inputConfirmPassword">Confirm Password</label>
+                            <input class="form-control {% if form.password2.errors %}is-invalid{% endif %}" id="inputConfirmPassword" name="password2" type="password" placeholder="Confirm password" />
+                            {% if form.password2.errors %}
+                            <span class="text-danger">
+                                    {% for error in form.password2.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Form Group (create account submit)-->
+                <button type="submit" class="btn btn-primary btn-block"> Create Account</button>
+            </form>
+        </div>
+        <div class="card-footer text-center">
+            <div class="small"><a href="{% url 'account_login' %}">Have an account? Go to login</a></div>
+        </div>
+    </div>
+</div>
+</script>
+{% endblock main %}
+{% block footer %}
+{% include "partials/footer.html" %}
+{% endblock footer %}

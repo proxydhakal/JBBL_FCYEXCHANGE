@@ -1,0 +1,73 @@
+{% extends "partials/base.html" %} 
+{% load static %}
+{% block navbar %}
+{% include "partials/navbar.html" %}
+{% endblock navbar %}
+{% block main %}
+<link rel="stylesheet" href="{% static 'css/style1.css' %}">
+<section class="utility mt-5">
+	<div class="container">
+		<div class="card bg-light mx-auto mb-5">
+			<div class="card-header justify-content-center">
+				<h3 class="my-4">Login</h3>
+				<p class="text-center">Please enter your login Email and password!</p>
+				{% if form.errors %}
+					{% for error in form.non_field_errors %}
+						<div class="alert alert-error">
+							<strong>{{ error|escape }}</strong>
+						</div>
+					{% endfor %}
+				{% endif %}
+			</div>
+			<div class="card-body">
+				<!-- Login form-->
+				<form method="POST" action="{% url 'account_login' %}">
+					{% csrf_token %}
+					<!-- Form Group (email address)-->
+					<div class="mb-3">
+						<label class="small mb-1" for="inputEmailAddress">Email</label>
+						<input class="form-control {% if form.login.errors %}is-invalid{% endif %}" id="inputEmailAddress" name="login" type="email" placeholder="Enter email address" />
+						{% if form.login.errors %}
+						<span class="text-danger">
+								{% for error in form.login.errors %}
+									{{ error }}
+								{% endfor %}
+							</span>
+						{% endif %}
+					</div>
+					<!-- Form Group (password)-->
+					<div class="mb-3">
+						<label class="small mb-1" for="inputPassword">Password</label>
+						<input class="form-control  {% if form.password.errors %}is-invalid{% endif %}" id="inputPassword" name="password" type="password" placeholder="Enter password" />
+						{% if form.password.errors %}
+						<span class="text-danger">
+								{% for error in form.password.errors %}
+									{{ error }}
+								{% endfor %}
+							</span>
+						{% endif %}
+					</div>
+					<!-- Form Group (remember password checkbox)-->
+					<div class="mb-3">
+						<div class="form-check">
+							<input class="form-check-input" id="rememberPasswordCheck" type="checkbox" value="" />
+							<label class="form-check-label" for="rememberPasswordCheck">Remember password</label>
+						</div>
+					</div>
+					<!-- Form Group (login box)-->
+					<div class="d-flex align-items-center justify-content-between mt-4 mb-0">
+						<a class="small" href="{% url 'account_reset_password' %}">Forgot Password?</a>
+						<button type="submit" class="btn btn-primary btn-block">Login</button>
+					</div>
+				</form>
+			</div>
+			<div class="card-footer text-center">
+				<div class="small"><a href="{% url 'account_signup' %}">Need an account? Sign up!</a></div>
+			</div>
+		</div> 
+	</div>
+</section>
+{% endblock main %}
+{% block footer %}
+{% include "partials/footer.html" %}
+{% endblock footer %}

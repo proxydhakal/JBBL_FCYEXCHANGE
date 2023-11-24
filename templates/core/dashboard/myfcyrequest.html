@@ -1,0 +1,82 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+        <div class="container-xl px-4">
+            <div class="page-header-content pt-4">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-auto mt-4">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="filter"></i></div>
+                            List of FCY Exchange Request
+                        </h1>
+                        <div class="page-header-subtitle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mt-n10">
+        <div class="card mb-4">
+            <div class="card-header">Request Details</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="datatablesSimple">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Request Id</th>
+                                <th>Branch Name</th>
+                                <th>Customer's Name</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in fcyrequest %}
+                            <tr>
+                                <td>{{ request.date }}</td>
+                                <td><a href="{% url "fcyexchangedetail" request.id %}">{{ request.refrenceid }}</a></td>
+                                <td>{{ request.prefBranchName }}</td>
+                                <td>{{ request.customer_fullname }}</td>
+                                <td>{{ request.totalEquivalentNPR }}</td>
+                                {% if request.status == 'Requested' %}
+                                    <td><p class="badge bg-warning text-white rounded-pill">Pending</p></td>
+                                {% elif request.status == 'Rejected' %}
+                                    <td><p class="badge bg-danger text-white rounded-pill">Rejected</p></td>
+                                {% elif request.status == 'Approved' %}
+                                    <td><p class="badge bg-success text-white rounded-pill">Approved</p></td>
+                                {% else %}
+                                    <td></td>
+                                {% endif %}
+                                <td>
+                                    <a href="{% url "fcyexchangeedit" request.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url "fcyexchangedetail"  request.id %}" class="btn-sm btn-secondary"><i class="far fa-eye"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+    (function () {
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple').DataTable({
+                paging: true,
+                scrollCollapse: true,
+                fixedColumns: {
+                    left: 2,
+                    right: 1
+                }
+            });
+        });        
+    })();
+</script>
+{% endblock main %}

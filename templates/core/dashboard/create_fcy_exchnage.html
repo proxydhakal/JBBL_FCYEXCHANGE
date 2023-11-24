@@ -1,0 +1,306 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-compact page-header-light border-bottom bg-white mb-4">
+        <div class="container-xl px-4">
+            <div class="page-header-content">
+                <div class="row align-items-center justify-content-between pt-5">
+                    <div class="col-auto mb-3">
+                        <h1 class="page-header-title text-center">
+                            <div class="page-header-icon"><i data-feather="file"></i></div>
+                            CREATE NEW FCY EXCHANGE REQUEST
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mb-3">
+        <div class="card">
+            <div class="card-header">FCY EXCHANGE DENO DETAILS</div>
+            <div class="card-body">
+                {% comment %} <button class="btn btn-primary" id="add-form" type="button">Add Field</button> {% endcomment %}
+                <form id="form-container" method="POST">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Prefered Branch<b class="text-danger"> *</b></label>
+                            <select class="form-select {% if form.preferredBranch.errors %}is-invalid{% endif %}" id="form-selects" name="preferredBranch" aria-label="Currency">
+                                <option selected disabled>Select Prefered Branch</option>
+                                {% for branch in branches %}
+                                <option value="{{branch.BranchCode}}">{{branch.BranchName}}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.preferredBranch.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.preferredBranch.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {{formset.management_form}}
+                    {% for form in formset %}
+                    <div class="row g-3 mb-3 p-3 border border-primary rounded bird-form mt-3">
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.currency.id_for_label }}">{{ form.currency.label }}<b class="text-danger"> *</b></label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.currency.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="{{ form.deno.id_for_label }}">{{ form.deno.label }}<b class="text-danger"> *</b></label>
+                            {{ form.deno }}
+                            {% if form.deno.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.deno.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="{{ form.unit.id_for_label }}">{{ form.unit.label }}<b class="text-danger"> *</b></label>
+                            {{ form.unit }}
+                            {% if form.unit.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.unit.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="{{ form.rate.id_for_label }}">{{ form.rate.label }}<b class="text-danger"> *</b></label>
+                            {{ form.rate }}
+                            {% if form.rate.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.rate.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="{{ form.equivalentNPR.id_for_label }}">{{ form.equivalentNPR.label }}<b class="text-danger"> *</b></label>
+                            {{ form.equivalentNPR }}
+                            {% if form.equivalentNPR.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.equivalentNPR.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-1">
+                            <button class="add-form btn-sm btn-primary" id="add-form">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-square-fill" viewBox="0 0 16 16">
+                                    <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="row mt-3">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Equivalent NPR<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPR.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPR" name="totalEquivalentNPR" value="{{ form.cleaned_data.totalEquivalentNPR }}"  readonly/>
+                            {% if form.totalEquivalentNPR.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPR.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Total Equivalent NPR in Words<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPRToWords.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPRToWords" name="totalEquivalentNPRToWords" value="{{ form.cleaned_data.totalEquivalentNPRToWords }}" readonly />
+                            {% if form.totalEquivalentNPRToWords.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPRToWords.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </form>
+                
+                
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+    $(document).ready(function(){
+        $(document).on('keyup', 'input[id^="id_form-"][id$="-deno"], input[id^="id_form-"][id$="-rate"], input[id^="id_form-"][id$="-unit"]', function() {
+            var totalEquivalentNPRValue = $('#totalEquivalentNPR').val();
+            // Check if totalEquivalentNPRValue is empty
+            if (totalEquivalentNPRValue.trim() === '') {
+                // If the field is empty, do nothing or clear the result
+                $('#totalEquivalentNPRToWords').val('');
+                return; // Exit the function
+            }
+            // Get the CSRF token from the cookie
+            var csrftoken = getCookie('csrftoken');
+
+            // Make an AJAX call to a Django view that converts the amount to words
+            $.ajax({
+                method: 'POST',
+                url: '/convert_to_words/',  // Replace this with your Django view endpoint
+                data: {
+                    'totalEquivalentNPR': totalEquivalentNPRValue
+                },
+                dataType: 'json',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                success: function(data) {
+                    var totalEquivalentNPRToWords = data.totalEquivalentNPRToWords || 'N/A';
+                    $('#totalEquivalentNPRToWords').val(totalEquivalentNPRToWords);
+                }
+            });
+        });
+    });
+
+    // Function to retrieve the CSRF token from cookies
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('body').on('input', 'input[name*=rate], input[name*=deno], input[name*=unit]', function() {
+            var currentField = $(this);
+            var currentForm = currentField.closest('.bird-form');
+            var rate = parseFloat(currentForm.find('input[name*="rate"]').val()) || 0;
+            var deno = parseFloat(currentForm.find('input[name*="deno"]').val()) || 0;
+            var unit = parseFloat(currentForm.find('input[name*="unit"]').val()) || 0;
+            var equivalentNPRField = currentForm.find('input[name*="equivalentNPR"]');
+
+            if (unit !== '' && rate !== '' && deno !== '') {
+                var unitNum = parseFloat(unit);
+                var rateNum = parseFloat(rate);
+                var denoNum = parseFloat(deno);
+            
+                if (!isNaN(unitNum) && !isNaN(rateNum) && !isNaN(denoNum)) {
+                    var equivalentNPR = denoNum * rateNum * unitNum;
+                    if (!isNaN(equivalentNPR)) {
+                        equivalentNPRField.val(equivalentNPR.toFixed(2));
+                    }
+        
+                    // Calculate total equivalentNPR
+                    var totalEquivalentNPR = 0;
+                    $('input[name*="equivalentNPR"]').each(function() {
+                        totalEquivalentNPR += parseFloat($(this).val()) || 0;
+                    });
+        
+                    // Display total equivalentNPR
+                    $('#totalEquivalentNPR').val(totalEquivalentNPR.toFixed(2));
+                } else {
+                    // Handle NaN (Not-a-Number) values
+                    console.error('Invalid input. Please enter valid numbers.');
+                }
+            } else {
+                // Handle empty input fields
+                console.error('Please fill in all the fields: Unit, Rate, and Deno.');
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let addButton = document.querySelector("#add-form");
+        let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+    
+        addButton.addEventListener('click', addForm);
+    
+        function addForm(e) {
+            e.preventDefault();
+        
+            let birdForms = document.querySelectorAll(".bird-form");
+            let newForm = birdForms[birdForms.length - 1].cloneNode(true);
+            let formRegex = /form-(\d){1}-/g;
+        
+            let formNum = birdForms.length;
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, `form-${formNum}-`);
+        
+            // Reset the input fields of the cloned form
+            newForm.querySelectorAll('input').forEach((input) => {
+                input.value = '';
+            });
+        
+            let container = document.querySelector(".bird-form");
+        
+            if (container) {
+                container.insertAdjacentElement('afterend', newForm);
+        
+                // Create a remove button for the new form
+                let removeButton = document.createElement('button');
+                removeButton.className = 'sub-form btn-sm btn-secondary';
+                removeButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="16" fill="currentColor" class="bi bi-dash-square-fill" viewBox="0 0 16 16">
+                        <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm2.5 7.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1z"/>
+                    </svg>
+                `;
+                removeButton.addEventListener('click', function() {
+                    newForm.remove();
+                    totalForms.setAttribute('value', `${document.querySelectorAll(".bird-form").length}`);
+                });
+        
+                let colDiv = newForm.querySelector('.col-md-1');
+                if (colDiv) {
+                    colDiv.innerHTML = '';
+                    colDiv.insertAdjacentElement('beforeend', removeButton);
+                } else {
+                    console.error("Col-md-1 div not found or does not exist in the new form.");
+                }
+        
+                totalForms.setAttribute('value', `${formNum + 1}`);
+            } else {
+                console.error("Container div not found or does not exist.");
+            }
+        }
+        
+    });       
+</script>
+<script>
+    $(document).on('submit', 'form', function(e) {
+        e.preventDefault(); // Prevent the form from submitting initially
+    
+        // Loop through each select element with a name starting with 'currency'
+        $('select[name^="currency"]').each(function() {
+            var selectedOption = $(this).find('option:selected');
+            var selectedCode = selectedOption.val(); // Get the selected 'cyc_code'
+            $(this).prop('disabled', true); // Disable the select temporarily
+            $(this).find('option[value="' + selectedCode + '"]').prop('selected', true); // Set the desired option as selected
+            $(this).prop('disabled', false); // Enable the select again
+        });
+    
+        // Now, allow the form to submit
+        this.submit();
+    });              
+</script>   
+{% endblock main %}

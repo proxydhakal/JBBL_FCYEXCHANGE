@@ -1,0 +1,32 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% load socialaccount %}
+{% load i18n %}
+{% block head_title %}{% trans "Sign Out" %}{% endblock %}
+{% block main %}
+<main>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mt-5">
+        <!-- Custom page header alternative example-->
+        <div class="row">
+            <div class="col-lg-4 col-xxl-7 mx-auto">
+                <div class="card bg-light mx-auto mt-5 mb-5">
+                    <article class="card-body mx-auto" style="max-width: 400px;">
+                        <h2 class="card-title mt-3 text-center">{% trans "Sign Out" %}</h2>
+                        <hr>
+                        <p class="text-center mb-3">{% trans 'Are you sure you want to sign out?' %}</p>
+                        <form method="post" action="{% url 'account_logout' %}">
+                            {% csrf_token %}
+                            {% if redirect_field_value %}
+                            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary btn-block text-center">{% trans 'Sign Out' %}</button>
+                        </form>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock main %}

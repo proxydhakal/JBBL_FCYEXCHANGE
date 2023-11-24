@@ -1,0 +1,39 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-compact page-header-light border-bottom bg-white mb-4 p-3">
+        <div class="container-xl px-4">
+            <div class="page-header-content">
+                <div class="row align-items-center justify-content-between pt-3">
+                    <div class="col-auto mb-3">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="file"></i></div>
+                            Upload Exchange Rate - FCY
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4 mt-4">
+        <form method="POST" action="{% url 'fcyexchangerate' %}"  enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row mx-auto">
+                <div class="col-xl-6 mb-3 mx-auto">
+                    <!-- Profile picture card-->
+                    <div class="card mb-4 mb-xl-0">
+                        <div class="card-header">Rate Excel File</div>
+                        <div class="card-body text-center">
+                            <input id="input-id" type="file" name="excel_file" class="file" data-preview-file-type="text">
+                            <button class="btn btn-secondary mt-4" type="submit">Upload File</button>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock main %}
