@@ -20,7 +20,7 @@ class FCYExchangeRequestMasterForm(forms.ModelForm):
 
 class FCYDenoMasterTableForm(forms.ModelForm):
     
-    currency = forms.ModelChoiceField(queryset=CurrencyTable.objects.all(),to_field_name='cyc_code', required=True)
+    currency = forms.ModelChoiceField(queryset=CurrencyTable.objects.all(),to_field_name='cyc_desc', required=True)
     
     class Meta:
         model = FCYDenoMasterTable

@@ -21,7 +21,7 @@
         <div class="card">
             <div class="card-header">FCY EXCHANGE DENO DETAILS</div>
             <div class="card-body">
-                {% comment %} <button class="btn btn-primary" id="add-form" type="button">Add Field</button> {% endcomment %}
+                
                 <form id="form-container" method="POST">
                     {% csrf_token %}
                     <div class="row g-3 mb-3">
@@ -134,7 +134,95 @@
                             {% endif %}
                         </div>
                     </div>
-                    <button class="btn btn-primary" type="submit">Submit</button>
+                    <button class="btn btn-primary" id="displaymodal" type="button">Submit</button>
+                    <div class="modal fade" id="formDataModal" tabindex="-1" aria-labelledby="formDataModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg  modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="formDataModalLabel">Preview Form Data</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Display form data here -->
+                                    <div id="formDataTable">
+                                        <div class="container">
+                                            <section class="foreign-exchange my-5">
+                                            
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <a class="navbar-brand" href="jbbl.com.np">
+                                                            <img class="logo" src="https://apps.jbbl.com.np/Assets/img/Adminlogo.png" alt="Logo">
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-1"></div>
+                                                    <div class="col-md-6 text-center">
+                                                        <h3 class="text-center pt-2">Foreign Currency Deposit Voucher</h3>
+                                                    </div>
+                                                </div>
+                                    
+                                                <div class="info d-flex mt-3">
+                                                    <div class="name">
+                                                        <p>Mr/Ms:-{{request.user.first_name}} {{request.user.last_name}}</p>
+                                                        <p>Account Number:- {{request.user.client_code}}</p>
+                                                    </div>
+                                                    <div class="date">
+                                                        <p>Date:-</span><span id="currentDate"></span></p>
+                                                    </div>
+                                                </div>			
+                                            
+                                    
+                                                <table class="table table-bordered text-Underline" width="100%" cellspacing="0" id="exchangeRates">
+                                                    <thead>
+                                                        <tr>                                             
+                                                            <th>Particulars Cash/T.C.</th>
+                                                            <th>Deno</th>
+                                                            <th>Unit</th>
+                                                            <th>Rate</th>
+                                                            <th>NPR equivalent</th>
+                                                                                              
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="myData">
+                                                    </tbody>
+                                                    <tbody>
+                                                        <tr>               
+                                                            <td width="20%" colspan="3" class="text-right"></td>   
+                                                            <td width="20%">Total Rs. </td> 
+                                                            <td width="15%" class="text-right"><span id="totalAmountNPR"></span></td>                                     
+                                                        </tr>
+                                                        <tr>               
+                                                            <td width="20%" colspan="5" class="text-right">Rupees Equivalent in Words:<span id="outputText"></span></td>
+                                                        </tr>
+                                                        <tr class="sign-address"> 
+                                                            <td class="" colspan="3">Customer's Signature</td>                                   
+                                                            <td class="" colspan="2">Local Address: {{request.user.address}}</td>                  
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </section>
+                                            <section class="foreign-exchange my-5">
+                                            
+                                                <div class="info d-flex mt-3">
+                                                    <div class="name">
+                                                        
+                                                        <p>Deposited By:- {{request.user.company}}</p>
+                                                    </div>
+                                                    <div class="date">
+                                                        <p>Posted by:-</p>
+                                                    </div>
+                                                </div>			
+                                        
+                                            </section>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary" id="submitFormDataBtn">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
                 
                 
@@ -146,19 +234,14 @@
     $(document).ready(function(){
         $(document).on('keyup', 'input[id^="id_form-"][id$="-deno"], input[id^="id_form-"][id$="-rate"], input[id^="id_form-"][id$="-unit"]', function() {
             var totalEquivalentNPRValue = $('#totalEquivalentNPR').val();
-            // Check if totalEquivalentNPRValue is empty
             if (totalEquivalentNPRValue.trim() === '') {
-                // If the field is empty, do nothing or clear the result
                 $('#totalEquivalentNPRToWords').val('');
-                return; // Exit the function
+                return; 
             }
-            // Get the CSRF token from the cookie
             var csrftoken = getCookie('csrftoken');
-
-            // Make an AJAX call to a Django view that converts the amount to words
             $.ajax({
                 method: 'POST',
-                url: '/convert_to_words/',  // Replace this with your Django view endpoint
+                url: '/convert_to_words/', 
                 data: {
                     'totalEquivalentNPR': totalEquivalentNPRValue
                 },
@@ -173,8 +256,6 @@
             });
         });
     });
-
-    // Function to retrieve the CSRF token from cookies
     function getCookie(name) {
         var cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -287,20 +368,75 @@
     });       
 </script>
 <script>
-    $(document).on('submit', 'form', function(e) {
-        e.preventDefault(); // Prevent the form from submitting initially
-    
-        // Loop through each select element with a name starting with 'currency'
-        $('select[name^="currency"]').each(function() {
-            var selectedOption = $(this).find('option:selected');
-            var selectedCode = selectedOption.val(); // Get the selected 'cyc_code'
-            $(this).prop('disabled', true); // Disable the select temporarily
-            $(this).find('option[value="' + selectedCode + '"]').prop('selected', true); // Set the desired option as selected
-            $(this).prop('disabled', false); // Enable the select again
+    $(document).ready(function() {
+        $('#submitFormDataBtn').on('click', function() {
+            $('#form-container').submit();
         });
-    
-        // Now, allow the form to submit
-        this.submit();
-    });              
-</script>   
+        $('#displaymodal').on('click', function() {
+            let tableRows = '';
+
+            $('.bird-form').each(function() {
+                let currency = $(this).find('[id$="currency"]').val();
+                let deno = $(this).find('[id$="deno"]').val();
+                let unit = $(this).find('[id$="unit"]').val();
+                let rate = $(this).find('[id$="rate"]').val();
+                let equivalentNPR = $(this).find('[id$="equivalentNPR"]').val();
+
+                tableRows += `<tr>
+                    <td>${currency}</td>
+                    <td>${deno}</td>
+                    <td>${unit}</td>
+                    <td>${rate}</td>
+                    <td>${equivalentNPR}</td>
+                </tr>`;
+            });
+            $('#myData').html(tableRows);
+            let totalEquivalentNPR = $('#totalEquivalentNPR').val();
+            $('#totalAmountNPR').text(totalEquivalentNPR);
+            let totalEquivalentNPRToWords = $('#totalEquivalentNPRToWords').val();
+            $('#outputText').text(totalEquivalentNPRToWords);
+            $('#formDataModal').modal('show');
+        });
+    });
+</script>
+<script>
+    let currentDate = new Date();
+    let formattedDate = currentDate.toISOString().split('T')[0];
+    document.getElementById('currentDate').innerText = formattedDate;
+    $(document).ready(function() {
+        $('#exchangeRates').DataTable({
+            "searching": false, 
+            "paging": false ,
+          "columnDefs": [
+            { "orderable": true, "targets": [0, 1,2] } 
+          ],
+          "order": [[0, 'asc']] 
+        });
+    });      
+</script>
+
+<style type="text/css">
+	/*foreign-exchange-section-started*/
+	.foreign-exchange {
+		border: 1px solid #134072;
+		padding: 25px;
+	}
+
+	.foreign-exchange .info {
+		justify-content: space-between;
+	}
+
+	.table {
+        color: #134072;
+    }
+
+    .table th, .table td {
+        border: 1px solid #134072;
+    }
+
+    /*.table .sign-address {
+    	justify-content: space-between;
+    }*/
+	/*foreign-exchange-section-ended*/
+</style>
 {% endblock main %}
