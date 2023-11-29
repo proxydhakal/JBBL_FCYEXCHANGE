@@ -25,8 +25,7 @@ from django.db.models import F, Subquery, OuterRef,ExpressionWrapper, CharField,
 from django.db.models.functions import Concat
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
-
-
+from collections import defaultdict   
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
@@ -88,14 +87,12 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin,View):
         currencies = CurrencyTable.objects.all() 
 
         if form.is_valid() and formset.is_valid():
-            # Extract data from the main form
             preferredBranch = form.cleaned_data['preferredBranch']
             totalEquivalentNPR = form.cleaned_data['totalEquivalentNPR']
             totalEquivalentNPRToWords = form.cleaned_data['totalEquivalentNPRToWords']
 
-            # Create and save the main record
             request_master = FCYExchangeRequestMaster.objects.create(
-                date=system_date,  # Adjust how 'system_date' is defined
+                date=system_date,  
                 preferredBranch=preferredBranch,
                 totalEquivalentNPR=totalEquivalentNPR,
                 totalEquivalentNPRToWords = totalEquivalentNPRToWords,
@@ -278,7 +275,7 @@ class FCYRequestView(LoginRequiredMixin,View):
 
     def post(self, request, *args, **kwargs):
         return HttpResponse('POST request!')
-    
+
 class FCYRequestDetailView(LoginRequiredMixin,View):
     template_name = 'core/dashboard/detailfcyrequest.html'
     
@@ -294,8 +291,20 @@ class FCYRequestDetailView(LoginRequiredMixin,View):
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id)
-        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails':fcydenodetails})
+        fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id).order_by('currency', 'deno')
+        
+        # Create a dictionary to organize data by currency
+        data_by_currency = defaultdict(list)
+        # Group data by currency
+        for item in fcydenodetails:
+            currency = item.currency
+            data_by_currency[currency].append({
+                'deno': item.deno,
+                'unit': item.unit,
+                'rate': item.rate,
+                'equivalent_npr': item.equivalentNPR
+            })
+        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency':dict(data_by_currency)})
 
     def post(self, request, *args, **kwargs):
         return HttpResponse('POST request!')
@@ -367,28 +376,3 @@ def update_fcy_data(request, fcy_id, masterId):
     fcy.save()
     
     return JsonResponse({'message': 'Data updated successfully'})
-
-# def update_fcy_data(request, fcy_id, master_id):
-#     if request.method == 'POST':
-#         fcy = get_object_or_404(FCYDenoMasterTable, id=fcy_id)
-#         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=master_id)
-
-#         # Update FCYDenoMasterTable fields
-#         fcy.deno = request.POST.get('deno', fcy.deno)
-#         fcy.rate = request.POST.get('rate', fcy.rate)
-#         fcy.unit = request.POST.get('unit', fcy.unit)
-#         fcy.equivalentNPR = request.POST.get('equivalentNPR', fcy.equivalentNPR)
-#         fcy.updatedBy = request.user.email if request.user.is_authenticated else ''
-#         fcy.updateDate = current_datetime
-#         fcy.save()
-
-#         # Update FCYExchangeRequestMaster fields
-#         fcymaster.totalEquivalentNPR = request.POST.get('totalEquivalentNPR', fcymaster.totalEquivalentNPR)
-#         fcymaster.totalEquivalentNPRToWords = request.POST.get('totalEquivalentNPRToWords', fcymaster.totalEquivalentNPRToWords)
-#         fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
-#         fcymaster.updateDate = current_datetime
-#         fcymaster.save()
-
-#         return JsonResponse({'message': 'Data updated successfully'})
-
-#     return JsonResponse({'error': 'Invalid request method'}, status=400)
