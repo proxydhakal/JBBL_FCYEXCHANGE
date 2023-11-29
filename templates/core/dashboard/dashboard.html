@@ -94,28 +94,21 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-lg-12 mb-4">
+            <div class="col-lg-6">
                 <!-- Area chart example-->
                 <div class="card mb-4">
-                    <div class="card-header">Today's Exchange Rate</div>
+                    <div class="card-header">JBBL Today's Exchange Rate</div>
                     <div class="card-body p-0">
-                        <!-- Billing history table-->
-                        <nav class="nav nav-borders">
-                            {% for time in list_times %}
-                            <a class="nav-link active" href="#">{{time.time}}</a>
-                            {% endfor %}
-                        </nav>
-                        <hr class="mt-0 mb-4" />
-                        <div class="table-responsive table-billing-history">
-                            <table class="table mb-0">
+                        <div class="table-responsive table-billing-history p-3">
+                            <table class="table mb-0" id="datatablesSimple1">
                                 <thead>
                                     <tr>
                                         <th>Currency</th>
                                         <th>Unit</th>
                                         <th>Buy (cash)</th>
                                         <th>Buy (Non-cash)</th>
-                                        <th>Sell</th>
-                                        <th>Prenium Rate</th>
+                                        {% comment %} <th>Sell</th> {% endcomment %}
+                                        <th>Premium Rate</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -125,54 +118,54 @@
                                             <td>{{data.currency_unit}}</td>
                                             <td>{{data.buying_rate_deno_50_or_less}}</td>
                                             <td>{{data.buying_rate_deno_50_or_above}}</td>
-                                            <td>{{data.selling_rate}}</td>
+                                            {% comment %} <td>{{data.selling_rate}}</td> {% endcomment %}
                                             <td>{{data.premium_rate}}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        <p class="m-3 p-3 text-danger text-center">Note: The exchange rates mentioned above are for value upto USD 2,000 only. Further, the exchange rates are indicative and subject to change according to market volatility without any prior notice.</p>
-
                     </div>
                 </div>
-                {% comment %} <div class="card mb-4">
-                    <div class="card-header">Exchange Rates</div>
-                    <div class="card-body">
-                        <nav class="nav nav-borders">
-                            {% for time in list_times %}
-                            <a class="nav-link active" href="#">{{time.time}}</a>
-                            {% endfor %}
-                        </nav>
-                        <hr class="mt-0 mb-4" />
-                        <div class="table-responsive">
-                            <table id="datatablesSimple">
+            </div>
+            <div class="col-lg-6">
+                <!-- Area chart example-->
+                <div class="card mb-4">
+                    <div class="card-header">NRB Today's Exchange Rate</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive table-billing-history p-3">
+                            <table class="table mb-0" id="datatablesSimple2">
                                 <thead>
                                     <tr>
                                         <th>Currency</th>
                                         <th>Unit</th>
-                                        <th>Buy (cash)</th>
-                                        <th>Buy (Non-cash)</th>
+                                        <th>Buy</th>
                                         <th>Sell</th>
-                                        <th>Preniminum Rate</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {% for data in filtered_data %}
-                                    <tr>
-                                        <td>{{data.currency}}</td>
-                                        <td>{{data.currency_unit}}</td>
-                                        <td>{{data.buying_rate_deno_50_or_less}}</td>
-                                        <td>{{data.buying_rate_deno_50_or_above}}</td>
-                                        <td>{{data.selling_rate}}</td>
-                                        <td>{{data.premium_rate}}</td>
-                                    </tr>
+                                {% if api_data %}
+                                    {% for payload in api_data.data.payload %}
+                                        {% for rate in payload.rates %}
+                                            <tr>
+                                                <td>{{ rate.currency.name }}</td>
+                                                <td>{{ rate.currency.unit }}</td>
+                                                <td>{{ rate.buy }}</td>
+                                                <td>{{ rate.sell }}</td>
+                                            </tr>
+                                        {% endfor %}
                                     {% endfor %}
-                                </tbody>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4">No data available</td>
+                                    </tr>
+                                {% endif %}
                             </table>
                         </div>
                     </div>
-                </div> {% endcomment %}
+                </div>
+            </div>
+            <div class="col-lg-12">
+                <p class="m-3 p-3 text-danger text-center">Note: The exchange rates mentioned above are for value upto USD 2,000 only. Further, the exchange rates are indicative and subject to change according to market volatility without any prior notice.</p>
             </div>
         </div>
     </div>
@@ -188,9 +181,22 @@
         </div>
     </div>
 </div>
-{% comment %} <script>
-    $(document).ready(function() {
-        $('#exampleModal').modal('show');
-    });
-</script>  {% endcomment %}
+<script type="text/javascript">
+    (function () {
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple1').DataTable({
+                paging: true,
+                scrollY: '260px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });        
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple2').DataTable({
+                paging: true,
+                scrollY: '300px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });    
+    })();
+</script>
 {% endblock main %}

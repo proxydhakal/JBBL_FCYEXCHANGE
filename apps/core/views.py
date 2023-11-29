@@ -44,19 +44,25 @@ def home(request):
 def dashboard(request):
     template_name = 'core/dashboard/dashboard.html'
     
-    list_times = FCYRateMaster.objects.filter(date=system_date)  # Define list_times
-    filtered_data = None  # Initialize filtered_data as None
+    list_times = FCYRateMaster.objects.filter(date=system_date)  
+    filtered_data = None  
     
     try:
-        last_object = FCYRateMaster.objects.latest('id')  # Try to get the earliest object
+        last_object = FCYRateMaster.objects.latest('id')  
         filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        api_url = f"https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=20&from={system_date}&to={system_date}"
+        response = requests.get(api_url)
+
+        if response.status_code == 200:
+            api_data = response.json()
     except ObjectDoesNotExist:
-        last_object = None  # Set last_object as None or any default value as needed
+        last_object = None  
         alert_message = "No data available in FCYRateMaster"
         context = {
             'filtered_data': filtered_data,
             'list_times': list_times,
             'last_object': last_object,
+            'api_data': api_data,
             'alert_message': alert_message
         }
         return render(request, template_name, context)
@@ -64,6 +70,7 @@ def dashboard(request):
     context = {
         'filtered_data': filtered_data,
         'list_times': list_times,
+        'api_data': api_data,
         'last_object': last_object  
     }
     return render(request, template_name, context)
@@ -304,6 +311,7 @@ class FCYRequestDetailView(LoginRequiredMixin,View):
                 'rate': item.rate,
                 'equivalent_npr': item.equivalentNPR
             })
+        
         return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency':dict(data_by_currency)})
 
     def post(self, request, *args, **kwargs):

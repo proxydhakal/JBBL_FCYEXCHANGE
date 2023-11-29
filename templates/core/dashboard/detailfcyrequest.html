@@ -92,37 +92,44 @@
                                 <div class="table-responsive table-billing-history">
                                     <table class="table mb-0">
                                         <thead>
-                                          <tr>
-                                            <th>Currency</th>
-                                            <th class="text-center">Deno Details</th>
-                                          </tr>
+                                            <tr>
+                                                <th>Currency</th>
+                                                <th class="text-center">Deno Details</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-                                          {% for currency, details in data_by_currency.items %}
-                                            <tr>
-                                              <td>{{ currency }}</td>
-                                              <td>
-                                                <table class="table mb-0">
-                                                  <tr>
-                                                    <th>Deno</th>
-                                                    <th>Unit</th>
-                                                    <th>Rate</th>
-                                                    <th>Equivalent NPR</th>
-                                                  </tr>
-                                                  {% for detail in details %}
-                                                    <tr>
-                                                      <td>{{ detail.deno }}</td>
-                                                      <td>{{ detail.unit }}</td>
-                                                      <td>{{ detail.rate }}</td>
-                                                      <td>{{ detail.equivalent_npr }}</td>
-                                                    </tr>
-                                                  {% endfor %}
-                                                </table>
-                                              </td>
-                                            </tr>
-                                          {% endfor %}
+                                            {% for currency, details in data_by_currency.items %}
+                                                <tr>
+                                                    <td>{{ currency }}</td>
+                                                    <td>
+                                                        <table class="table mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th></th>
+                                                                    <th>Deno</th>
+                                                                    <th>Unit</th>
+                                                                    <th>Rate</th>
+                                                                    <th>Equivalent NPR</th>
+                                                            
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for detail in details %}
+                                                                    <tr>
+                                                                        <td></td>
+                                                                        <td>{{ detail.deno }}</td>
+                                                                        <td>{{ detail.unit }}</td>
+                                                                        <td>{{ detail.rate }}</td>
+                                                                        <td>{{ detail.equivalent_npr }}</td>
+                                                                    </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
                                         </tbody>
-                                    </table>                                      
+                                    </table>                                   
                                 </div>
                             </div>
                         </div>
@@ -157,4 +164,26 @@
         </div>
     </div>
 </main>
+<script>
+    $(document).ready(function() {
+        $('.table.mb-0 table.mb-0').each(function() {
+            var subtotalDeno = 0;
+            var subtotalEquivalentNPR = 0;
+            $(this).find('tbody tr').each(function() {
+                var deno = parseFloat($(this).find('td:eq(1)').text());
+                var equivalentNPR = parseFloat($(this).find('td:eq(4)').text());
+                subtotalDeno += deno;
+                subtotalEquivalentNPR += equivalentNPR;
+            });
+            var subtotalRow = '<tr>' +
+                '<td><b>Sub Total:</b></td>' +
+                '<td class="subtotal-deno-value"><b>' + subtotalDeno + '</b></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td class="subtotal-equivalent-npr-value"><b>' + subtotalEquivalentNPR.toFixed(2) + '</b></td>' +
+                '</tr>';
+            $(this).find('tbody').append(subtotalRow);
+        });
+    });    
+</script>
 {% endblock main %}

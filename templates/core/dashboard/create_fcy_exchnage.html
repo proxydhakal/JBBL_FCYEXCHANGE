@@ -63,11 +63,11 @@
                             {% if form.deno.errors %}
                                 <span class="text-danger">
                                     {% for error in form.deno.errors %}
-                                        {{ error }}
+                                        <div>{{ error }}</div> <!-- Display validation errors within the input field -->
                                     {% endfor %}
                                 </span>
                             {% endif %}
-                        </div>
+                        </div>                        
                         <div class="col-md-2 mb-3">
                             <label for="{{ form.unit.id_for_label }}">{{ form.unit.label }}<b class="text-danger"> *</b></label>
                             {{ form.unit }}
