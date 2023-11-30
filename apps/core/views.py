@@ -25,7 +25,15 @@ from django.db.models import F, Subquery, OuterRef,ExpressionWrapper, CharField,
 from django.db.models.functions import Concat
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
-from collections import defaultdict   
+from collections import defaultdict
+import io
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table, TableStyle
+from reportlab.pdfgen import canvas
+from django.http import FileResponse
+from django.contrib.staticfiles.finders import find
+   
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
@@ -415,17 +423,6 @@ def update_fcy_data(request, fcy_id, masterId):
     fcy.save()
     
     return JsonResponse({'message': 'Data updated successfully'})
-
-import io
-from reportlab.lib import colors
-from bs4 import BeautifulSoup
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import Table, TableStyle
-from reportlab.pdfgen import canvas
-from django.http import FileResponse
-from django.contrib.staticfiles.finders import find
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
 
 
 def generate_pdf_receipt(request, id):
