@@ -262,6 +262,37 @@ def convert_to_words(request):
     else:
         return JsonResponse({'totalEquivalentNPRToWords': ''})
     
+@csrf_exempt
+def getdenowiserate(request):
+    if request.method == 'POST':
+        try:
+            deno = int(request.POST.get('denoValue'))
+            currency = request.POST.get('selectedCurrency')
+
+            try:
+                last_object = FCYRateMaster.objects.latest('id')  
+                filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk, currency_code=currency).first()
+
+                if filtered_data:
+                    if deno <= 50:
+                        denorate = filtered_data.buying_rate_deno_50_or_above
+                    else: 
+                        denorate = filtered_data.premium_rate
+
+                    data = {
+                        'rate': denorate,
+                    }
+                    return JsonResponse(data)
+                else:
+                    return JsonResponse({'error': 'No exchange rate found for the given currency'}, status=404)
+            except ObjectDoesNotExist:
+                return JsonResponse({'error': 'No FCYRateMaster object found'}, status=404)
+
+        except (ValueError, ObjectDoesNotExist) as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'rate': ''})
+    
     
 class FCYRequestView(LoginRequiredMixin,View):
     template_name = 'core/dashboard/myfcyrequest.html'

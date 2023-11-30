@@ -11,5 +11,6 @@ urlpatterns = [
     path('detail/fcyexchangerequest/<int:id>/', views.FCYRequestDetailView.as_view(), name='fcyexchangedetail'),
     path('edit/fcyexchangerequest/<int:id>/', views.FCYRequestEditView.as_view(), name='fcyexchangeedit'),
     path('convert_to_words/', views.convert_to_words, name='convert_to_words'),
+    path('getdenorate/', views.getdenowiserate, name='getdenorate'),
     path('update_fcy_data/<int:fcy_id>/<int:masterId>/', views.update_fcy_data, name='update_fcy_data'),
 ]

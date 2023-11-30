@@ -169,16 +169,19 @@
         $('.table.mb-0 table.mb-0').each(function() {
             var subtotalDeno = 0;
             var subtotalEquivalentNPR = 0;
+            var subtotalUnit = 0;
             $(this).find('tbody tr').each(function() {
                 var deno = parseFloat($(this).find('td:eq(1)').text());
+                var unit = parseFloat($(this).find('td:eq(2)').text());
                 var equivalentNPR = parseFloat($(this).find('td:eq(4)').text());
                 subtotalDeno += deno;
+                subtotalUnit += unit;
                 subtotalEquivalentNPR += equivalentNPR;
             });
+            var denounit = subtotalDeno * subtotalUnit;
             var subtotalRow = '<tr>' +
                 '<td><b>Sub Total:</b></td>' +
-                '<td class="subtotal-deno-value"><b>' + subtotalDeno + '</b></td>' +
-                '<td></td>' +
+                '<td colspan="2" class="text-center subtotal-deno-value"><b>' + denounit + '</b></td>' +
                 '<td></td>' +
                 '<td class="subtotal-equivalent-npr-value"><b>' + subtotalEquivalentNPR.toFixed(2) + '</b></td>' +
                 '</tr>';

@@ -151,7 +151,7 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <a class="navbar-brand" href="jbbl.com.np">
-                                                            <img class="logo" src="https://apps.jbbl.com.np/Assets/img/Adminlogo.png" alt="Logo">
+                                                            <img class="logo w-100" src="{% static 'images/logo.png' %}"  alt="Logo">
                                                         </a>
                                                     </div>
                                                     <div class="col-md-1"></div>
@@ -231,8 +231,61 @@
     </div>
 </main>
 <script>
+$(document).ready(function(){
+    function updateRate(parentRow) {
+        var denoInput = parentRow.find('input[id$="-deno"]');
+        var currencySelect = parentRow.find('select[name$="-currency"]');
+        var rateInput = parentRow.find('input[id$="-rate"]');
+        var csrftoken = getCookie('csrftoken');
+    
+        var denoValue = denoInput.val();
+        var selectedCurrency = currencySelect.val();
+    
+        if (denoValue && selectedCurrency) {
+            $.ajax({
+                method: 'POST',
+                url: '/getdenorate/', 
+                data: {
+                    'denoValue': denoValue, 'selectedCurrency': selectedCurrency
+                },
+                dataType: 'json',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                success: function(data) {
+                    var rate = data.rate || 'N/A';
+                    rateInput.val(rate);
+                }
+            });
+        } else {
+            rateInput.val('');
+        }
+    }
+    
+    $(document).on('keyup change', 'input[id^="id_form-"][id$="-deno"], select[name$="-currency"]', function() {
+        var parentRow = $(this).closest('.row');
+        updateRate(parentRow);
+    });
+    
+});
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+<script>
     $(document).ready(function(){
-        $(document).on('keyup', 'input[id^="id_form-"][id$="-deno"], input[id^="id_form-"][id$="-rate"], input[id^="id_form-"][id$="-unit"]', function() {
+        $(document).on('keyup change', 'input[id^="id_form-"][id$="-deno"], input[id^="id_form-"][id$="-rate"], input[id^="id_form-"][id$="-unit"], select[name$="-currency"]', function() {
             var totalEquivalentNPRValue = $('#totalEquivalentNPR').val();
             if (totalEquivalentNPRValue.trim() === '') {
                 $('#totalEquivalentNPRToWords').val('');
@@ -273,7 +326,7 @@
 </script>
 <script type="text/javascript">
     $(document).ready(function() {
-        $('body').on('input', 'input[name*=rate], input[name*=deno], input[name*=unit]', function() {
+        $('body').on('input change', 'input[name*=rate], input[name*=deno], input[name*=unit], select[name*=currency]', function() {
             var currentField = $(this);
             var currentForm = currentField.closest('.bird-form');
             var rate = parseFloat(currentForm.find('input[name*="rate"]').val()) || 0;

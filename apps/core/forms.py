@@ -39,6 +39,9 @@ class FCYDenoMasterTableForm(forms.ModelForm):
 
             if field_name == 'equivalentNPR':
                 field.widget.attrs['readonly'] = True
+
+            if field_name == 'rate':
+                field.widget.attrs['readonly'] = True
     
     def clean(self):
         cleaned_data = super().clean()
