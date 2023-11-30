@@ -446,17 +446,17 @@ def generate_pdf_receipt(request, id):
     p.line(0, 770, 600, 770)
     
     text = "FOREIGN EXCHANGE ENCASHMENT RECEIPT"
-    p.setFont("Times-Roman", 16)
+    p.setFont("Times-Bold", 16)
     text_width = p.stringWidth(text)
     page_width, _ = A4
     x_position = (page_width - text_width) / 2  
-    p.setFillColor(colors.blue)
+    p.setFillColor('#0366ae')
     p.drawString(x_position, 750, text)
     
     p.setFillColor(colors.black)
     p.setFont("Times-Roman", 12)
     p.drawString(50, 730, f"Receipt No: {exchnagedata.refrenceid}")
-    p.drawString(50, 715, f"Date: {exchnagedata.date}")
+    p.drawString(50, 715, f"Date: {system_date}")
     
     left_margin = 50
     right_margin = A4[0] - 50
@@ -505,10 +505,11 @@ def generate_pdf_receipt(request, id):
     table = Table(table_data, colWidths=100)
 
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), '#d2a12a'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#0366ae'),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Times-Roman'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Times-Bold'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Times-Roman'),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige)
     ]))
@@ -517,8 +518,10 @@ def generate_pdf_receipt(request, id):
     table.drawOn(p, 50, 480)
     
     p.setFillColor(colors.black)
-    p.setFont("Times-Roman", 10)
+    p.setFont("Times-Bold", 10)
     p.drawString(370, 460, f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 10)
     p.drawString(50, 440, f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
     p.drawString(50, 400, f"Customer's Signature:_______________________________")
     p.drawString(50, 300, f"Signature & Stamp of the Bank")
