@@ -25,7 +25,15 @@ from django.db.models import F, Subquery, OuterRef,ExpressionWrapper, CharField,
 from django.db.models.functions import Concat
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
-from collections import defaultdict   
+from collections import defaultdict
+import io
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table, TableStyle
+from reportlab.pdfgen import canvas
+from django.http import FileResponse
+from django.contrib.staticfiles.finders import find
+   
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
@@ -415,3 +423,110 @@ def update_fcy_data(request, fcy_id, masterId):
     fcy.save()
     
     return JsonResponse({'message': 'Data updated successfully'})
+
+
+def generate_pdf_receipt(request, id):
+    exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
+    userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    fcydenodetails = FCYDenoMasterTable.objects.filter(masterid= exchnagedata.id).order_by('currency','deno')
+    
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    logo_path = find('images/logo.png')
+    if logo_path:
+        img_width = 130
+        img_height = 45  
+        page_width, page_height = A4
+        x_position = (page_width - img_width) / 2
+        y_position = 785
+        p.drawImage(logo_path, x_position, y_position, width=img_width, height=img_height)
+        
+        
+    p.setFillColor(colors.black)
+    p.line(0, 770, 600, 770)
+    
+    text = "FOREIGN EXCHANGE ENCASHMENT RECEIPT"
+    p.setFont("Times-Bold", 16)
+    text_width = p.stringWidth(text)
+    page_width, _ = A4
+    x_position = (page_width - text_width) / 2  
+    p.setFillColor('#0366ae')
+    p.drawString(x_position, 750, text)
+    
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 12)
+    p.drawString(50, 730, f"Receipt No: {exchnagedata.refrenceid}")
+    p.drawString(50, 715, f"Date: {system_date}")
+    
+    left_margin = 50
+    right_margin = A4[0] - 50
+    
+    text_content = (
+        f'We hereby certify that we have purchased today foreign currency as mentioned below from M/S {userdata.first_name} {userdata.last_name}.'
+    )
+    
+    text_x = left_margin
+    text_y = 685
+    text_width = right_margin - left_margin
+    
+    lines = []
+    line = ''
+    for word in text_content.split():
+        if p.stringWidth(line + ' ' + word, "Times-Roman", 12) < text_width:
+            line += f'{word} '
+        else:
+            lines.append(line)
+            line = f'{word} '
+    
+
+    lines.append(line)
+    
+
+    p.setFont("Times-Roman", 12)
+    p.setFillColor(colors.black)
+    for line in lines:
+        p.drawString(text_x, text_y, line.strip())
+        text_y -= 15  
+        
+    table_data = [
+        ['Currency', 'Deno', 'Unit', 'Rate', 'Equivalent NPR']
+    ]
+
+    for fcy in fcydenodetails:
+        row = [
+            fcy.currency[:3],
+            fcy.deno,
+            fcy.unit,
+            fcy.rate,
+            fcy.equivalentNPR
+        ]
+        table_data.append(row)
+    
+    table = Table(table_data, colWidths=100)
+
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d2a12a'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#0366ae'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Times-Bold'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Times-Roman'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige)
+    ]))
+
+    table.wrapOn(p, A4[0], A4[1])
+    table.drawOn(p, 50, 480)
+    
+    p.setFillColor(colors.black)
+    p.setFont("Times-Bold", 10)
+    p.drawString(370, 460, f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 10)
+    p.drawString(50, 440, f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
+    p.drawString(50, 400, f"Customer's Signature:_______________________________")
+    p.drawString(50, 300, f"Signature & Stamp of the Bank")
+    
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf')
