@@ -46,6 +46,14 @@
                                 {% endif %}
                                 </div>
                             </li>
+                            {% if fcyrequest.status  == 'Approved'  %}
+                            <li class="list-group-item">
+                                <div><strong>Print Receipt:</strong>
+                                    <a href="{% url "getreceipt" fcyrequest.id %}" class="btn-sm btn-primary">
+                                        Download
+                                    </a></div>
+                            </li>
+                            {% endif %}
                         </ul>
                     </div>
                     <div class="col-md-6">
