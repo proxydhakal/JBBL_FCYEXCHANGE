@@ -488,6 +488,9 @@ def generate_pdf_receipt(request, id):
         p.drawString(text_x, text_y, line.strip())
         text_y -= 15  
         
+    text_y -= 15
+    table_height = (len(fcydenodetails)+2) * 15          
+    table_y = text_y - table_height
     table_data = [
         ['Currency', 'Deno', 'Unit', 'Rate', 'Equivalent NPR']
     ]
@@ -515,16 +518,27 @@ def generate_pdf_receipt(request, id):
     ]))
 
     table.wrapOn(p, A4[0], A4[1])
-    table.drawOn(p, 50, 480)
+    table.drawOn(p, 50, table_y)
     
+    text_below_table_y = table_y - 15  
     p.setFillColor(colors.black)
-    p.setFont("Times-Bold", 10)
-    p.drawString(370, 460, f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    p.setFont("Times-Bold", 12)
+    p.drawString(370, text_below_table_y, f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    text_below_table_y = table_y - 15  
+
+    # Draw the text below the table
     p.setFillColor(colors.black)
-    p.setFont("Times-Roman", 10)
-    p.drawString(50, 440, f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
-    p.drawString(50, 400, f"Customer's Signature:_______________________________")
-    p.drawString(50, 300, f"Signature & Stamp of the Bank")
+    p.setFont("Times-Roman", 12)
+    text_width = A4[0] - 2 * 50  
+    text_object = p.beginText(50, text_below_table_y - 20)
+    text_object.setFont("Times-Roman", 12)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.textLines(f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
+    p.drawText(text_object)
+    p.drawString(50, text_below_table_y - 60, f"Customer's Signature:_______________________________")
+    p.drawString(50, text_below_table_y - 160, f"Signature & Stamp of the Bank")
     
     p.showPage()
     p.save()
