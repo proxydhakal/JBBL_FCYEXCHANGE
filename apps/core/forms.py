@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import formset_factory
 from apps.core.models import FCYExchangeRequestMaster, FCYDenoMasterTable, CurrencyTable
+from apps.branches.models import Branches
 
 class FCYExchangeRateUploadForm(forms.Form):
     excel_file = forms.FileField(label='Upload Excel File')
@@ -8,13 +9,29 @@ class FCYExchangeRateUploadForm(forms.Form):
 
 
 class FCYExchangeRequestMasterForm(forms.ModelForm):
+    preferredBranch = forms.ModelChoiceField(
+        queryset=Branches.objects.all(),
+        to_field_name='BranchCode',
+        required=True,
+        empty_label='Select Branch',
+    )
+
     class Meta:
         model = FCYExchangeRequestMaster
         fields = ['preferredBranch', 'totalEquivalentNPR', 'totalEquivalentNPRToWords']
+        
+    def __init__(self, *args, **kwargs):
+        super(FCYExchangeRequestMasterForm, self).__init__(*args, **kwargs)
+        
+        self.fields['preferredBranch'].choices = self.get_branch_choices()
+        
+        for field_name, field in self.fields.items():
+            field.required = True
+            field.widget.attrs['class'] = 'form-control'
 
-    totalEquivalentNPR = forms.DecimalField(max_digits=10, decimal_places=2, required=True)
-    preferredBranch = forms.CharField(max_length=50,required=True)
-    totalEquivalentNPRToWords = forms.CharField(max_length=300,required=True)
+    def get_branch_choices(self):
+        choices = [(branch.BranchCode, branch.BranchName) for branch in Branches.objects.all()]
+        return [('', self.fields['preferredBranch'].empty_label)] + choices
 
 
 class FCYDenoMasterTableForm(forms.ModelForm):
@@ -28,6 +45,7 @@ class FCYDenoMasterTableForm(forms.ModelForm):
         super(FCYDenoMasterTableForm, self).__init__(*args, **kwargs)
         
         for field_name, field in self.fields.items():
+            self.fields['currency'].empty_label = 'Select Currency'
             field.required = True
             field.widget.attrs['class'] = 'form-control'
             

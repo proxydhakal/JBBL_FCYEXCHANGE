@@ -14,7 +14,7 @@ class Branches(models.Model):
     IsEditedDate = models.CharField(max_length=255, null=True, blank=True)
     
     def __str__(self):
-        return f"{self.BranchName} - {self.BranchCode}"  # Display a meaningful representation of the object
+        return f"{self.BranchCode}"  # Display a meaningful representation of the object
 
     class Meta:
         verbose_name = "BRANCHES"
