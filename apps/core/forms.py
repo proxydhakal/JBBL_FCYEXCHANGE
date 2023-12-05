@@ -94,3 +94,24 @@ class FCYDenoMasterTableForm(forms.ModelForm):
     def label_from_instance(self, obj):
         return obj.cyc_desc
     
+class DenoApprovedForm(forms.ModelForm):
+    ACTION_TYPES = (
+        ('APPROVED', 'APPROVED'),
+        ('REJECTED', 'REJECTED'),
+    )
+    
+    remarks = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Please Enter remarks'}), required=True)
+    action = forms.ChoiceField(choices=ACTION_TYPES, widget=forms.Select(attrs={'class': 'form-control'}), required=True)
+    depositedby = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Please Enter Depositor's Name"}), required=True)
+
+    class Meta:
+        model = FCYExchangeRequestMaster  
+        fields = ['remarks', 'action', 'depositedby']
+        
+    def __init__(self, *args, **kwargs):
+        super(DenoApprovedForm, self).__init__(*args, **kwargs)
+        
+        for field_name, field in self.fields.items():
+            if field_name == 'action':
+                field.empty_label = 'Select Action'
+    
