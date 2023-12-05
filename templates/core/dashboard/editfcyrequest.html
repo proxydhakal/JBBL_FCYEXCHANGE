@@ -117,17 +117,39 @@
                         </div>
                     </div>
                     <div class="row mb-3">
+                       
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Action<b class="text-danger"> *</b></label>
-                            <select class="form-select form-control" id="action" name="action" aria-label="Currency">
-                                <option>Select Option</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Rejected">Reject</option>
-                            </select>
+                            {{form.action}}
+                            {% if form.action.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.action.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
                         </div>
-                        <div class="col-md-8 mb-3 remarksdiv" id="remarksdiv">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Deposited By<b class="text-danger"> *</b></label>
+                            {{form.depositedby}}
+                            {% if form.depositedby.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.depositedby.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8 mb-3">
                             <label class="form-label">Remarks<b class="text-danger"> *</b></label>
-                            <input class="form-control" type="text"  id="remarks" name="remarks" value="" />
+                            {{form.remarks}}
+                            {% if form.remarks.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.remarks.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                     <button class="btn btn-primary" type="submit">Submit</button>

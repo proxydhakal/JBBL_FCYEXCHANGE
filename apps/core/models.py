@@ -1,5 +1,6 @@
 from django.db import models
 from import_export import resources
+from simple_history.models import HistoricalRecords
 
 class FCYRateMaster(models.Model):
    
@@ -8,7 +9,7 @@ class FCYRateMaster(models.Model):
     user = models.CharField(blank=False, null=False,max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.date} - {self.time}"
@@ -27,6 +28,7 @@ class FCYExchangeRate(models.Model):
     buying_rate_deno_50_or_above = models.DecimalField(max_digits=10, decimal_places=2)
     selling_rate = models.DecimalField(max_digits=10, decimal_places=2)
     premium_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.currency_code} - {self.currency_unit}"
@@ -41,6 +43,7 @@ class CurrencyTable(models.Model):
     cyc_desc_long = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.cyc_desc} - {self.cyc_desc_long}"
@@ -54,12 +57,19 @@ class CurrencyTableResource(resources.ModelResource):
 
 
 class FCYExchangeRequestMaster(models.Model):
+    
+    ACTION_TYPES = (
+        ('APPROVED', 'APPROVED'),
+        ('REJECTED', 'REJECTED'),
+    )
     refrenceid          = models.CharField(max_length=20, unique=True)  
     date                = models.DateField()
     preferredBranch     = models.CharField(max_length=10, null=False, blank=False)  
     totalEquivalentNPR  = models.DecimalField(max_digits=20, decimal_places=2, null=False, blank=False)  
     totalEquivalentNPRToWords = models.CharField(max_length=300, null=False, blank=False)  
     status              = models.CharField(max_length=50, null=False, blank=False)
+    action              = models.CharField(default='-', max_length=50,choices=ACTION_TYPES)
+    depositedby         = models.CharField(default='-', max_length=255)
     remarks             = models.TextField(default='-')
     enteredBy           = models.CharField(max_length=255)  
     enterDate           = models.DateTimeField()
@@ -67,6 +77,7 @@ class FCYExchangeRequestMaster(models.Model):
     updateDate          = models.DateTimeField()
     deletedBy           = models.CharField(max_length=255)  
     deletedDate         = models.DateTimeField()
+    history             = HistoricalRecords()
 
     def __str__(self):
         return f"{self.refrenceid} - {self.date} - {self.preferredBranch}"  
@@ -104,6 +115,7 @@ class FCYDenoMasterTable(models.Model):
     updateDate      = models.DateTimeField()
     deletedBy       = models.CharField(max_length=255)  
     deletedDate     = models.DateTimeField()
+    history         = HistoricalRecords()
 
     def __str__(self):
         return f"{self.currency} - {self.deno}"  

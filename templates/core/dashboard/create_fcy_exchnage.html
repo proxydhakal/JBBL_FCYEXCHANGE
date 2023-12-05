@@ -27,13 +27,9 @@
                     <div class="row g-3 mb-3">
 
                         <div class="col-md-3 mb-3">
+                            
                             <label class="form-label">Prefered Branch<b class="text-danger"> *</b></label>
-                            <select class="form-select {% if form.preferredBranch.errors %}is-invalid{% endif %}" id="form-selects" name="preferredBranch" aria-label="Currency">
-                                <option selected disabled>Select Prefered Branch</option>
-                                {% for branch in branches %}
-                                <option value="{{branch.BranchCode}}">{{branch.BranchName}}</option>
-                                {% endfor %}
-                            </select>
+                            {{form.preferredBranch}}
                             {% if form.preferredBranch.errors %}
                                 <span class="text-danger">
                                     {% for error in form.preferredBranch.errors %}

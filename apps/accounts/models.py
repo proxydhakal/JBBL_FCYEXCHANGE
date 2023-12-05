@@ -4,7 +4,11 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
-
+from simple_history.models import HistoricalRecords
+from simple_history import register
+from django.contrib.sessions.models import Session
+from django.contrib.sessions.backends.db import SessionStore
+import inspect
 
 
 class UserAccountManager(BaseUserManager):
@@ -67,6 +71,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=50, null=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True, default='-')
     dob = models.DateField(blank=True, null=True, default='2022-02-02')
+    history = HistoricalRecords()
     objects = UserAccountManager()
 
     USERNAME_FIELD = 'email'
@@ -75,25 +80,21 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
         return f"{self.first_name} {self.last_name}"
     
     def save(self, *args, **kwargs):
-        # Check if the profile_image is set and email exists
         if self.email and not self.profile_image:
-            # Extract the text before '@' symbol from the email
             email_parts = self.email.split('@')
             if len(email_parts) == 2:
                 email_prefix = email_parts[0]
             else:
-                email_prefix = "default"  # Default name if email format is not as expected
+                email_prefix = "default" 
 
-            # Construct the new profile image filename
             filename = f"profile_pics/{email_prefix}.png"
 
-            # Set the profile_image field to the new filename
             self.profile_image.name = filename
         elif not self.profile_image:
-            # Set the profile_image to default.png if not provided by the user
             self.profile_image.name = 'profile_pics/default.png'
 
         super(UserAccount, self).save(*args, **kwargs)
+        
         
     class Meta:
         verbose_name = "USER ACCOUNT"
