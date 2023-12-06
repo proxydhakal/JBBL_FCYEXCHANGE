@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Foreign Currency Exchange Encashment Report</title>
+  <style>
+    /* Add your CSS styles here */
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    .container {
+      width: 80%;
+      margin: auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      background-color: #134072;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+      border-radius: 5px 5px 0 0;
+    }
+    .content {
+      padding: 20px;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #d2a12a;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Foreign Currency Exchange Encashment Report</h2>
+    </div>
+    <div class="content">
+      <h4>Dear {{ username }},</h4>
+      <p>Please find your Foreign Currency Exchange (FCY) encashment report attached to this email.</p>
+      <p>Thank you for choosing our services. Should you have any questions or require further assistance, feel free to contact us.</p>
+      <p>Best regards,<br>
+      JBBL FCY Exchange System</p>
+    </div>
+  </div>
+</body>
+</html>

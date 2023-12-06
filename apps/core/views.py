@@ -40,7 +40,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.urls import reverse
 from urllib.parse import urljoin
-
+from django.conf import settings
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -356,7 +356,8 @@ class FCYRequestView(LoginRequiredMixin, View):
         query_result = FCYExchangeRequestMaster.objects.annotate(
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
-        ).exclude(status='Deleted').values()
+        ).exclude(status='Deleted').order_by('-refrenceid').values()
+
         return render(request, self.template_name, {'fcyrequest': query_result})
 
     def post(self, request, *args, **kwargs):
@@ -423,7 +424,7 @@ class FCYRequestEditView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         form = DenoApprovedForm(request.POST)
-        id = kwargs.get('id')  # Retrieve 'id' from kwargs
+        id = kwargs.get('id')
         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
 
         if fcymaster.enteredBy == request.user.email:
@@ -431,22 +432,30 @@ class FCYRequestEditView(LoginRequiredMixin, View):
                 action = form.cleaned_data['action']
                 if action == 'APPROVED':
                     fcymaster.status = 'Approved'
+                    fcymaster.remarks = form.cleaned_data['remarks']
+                    fcymaster.depositedby = form.cleaned_data['depositedby']
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    send_email_with_attachment(id)
                 elif action == 'REJECTED':
                     fcymaster.status = 'Rejected'
+                    fcymaster.remarks = form.cleaned_data['remarks']
+                    fcymaster.depositedby = form.cleaned_data['depositedby']
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    send_email_rejection(id)
                 else:
                     messages.error(request, "Operation Unsuccessful!")
-                    return redirect(f'/edit/fcyexchangerequest/{id}')  # Redirect with id
+                    return redirect(f'/edit/fcyexchangerequest/{id}') 
 
-                fcymaster.remarks = form.cleaned_data['remarks']
-                fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
-                fcymaster.updateDate = current_datetime
-                fcymaster.save()
 
                 messages.success(request, "Operation Successful!")
-                return redirect('/fcyexchangerequest/')  # Redirect with id
+                return redirect('/fcyexchangerequest/') 
             else:
                 messages.error(request, "Form data is invalid!")
-                return redirect(f'/edit/fcyexchangerequest/{id}')  # Redirect with id
+                return redirect(f'/edit/fcyexchangerequest/{id}') 
         else:
             messages.error(request, "Unauthorized User!")
             return redirect('/fcyexchangerequest/')
@@ -594,11 +603,182 @@ def generate_pdf_receipt(request, id):
                  f"Customer's Signature:_______________________________")
     p.drawString(50, text_below_table_y - 160,
                  f"Signature & Stamp of the Bank")
-
+    
+    
     p.showPage()
     p.save()
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf')
+
+
+def send_email_with_attachment(id):
+    exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
+    userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+
+    # Generate the PDF using the function
+    pdf_buffer = generate_pdf(userdata, exchnagedata)
+
+    # Create an EmailMultiAlternatives object to include both HTML and text content
+    email = EmailMultiAlternatives(
+        subject='Foreign Exchange Encashment Receipt',
+        from_email=settings.EMAIL_HOST_USER,  # Replace with your sender email address
+        to=['shekhar.dhakal@jbbl.com.np', exchnagedata.enteredBy],  # Replace with recipient email address
+    )
+
+    # Attach the generated PDF file to the email
+    email.attach(f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf', pdf_buffer.getvalue(), 'application/pdf')
+
+    # Email body (HTML content)
+    html_content = render_to_string('core/email/encashment_receipt_template.html', {
+        'username': f'{userdata.first_name} {userdata.last_name}',  
+    })
+
+    # Attach HTML content as an alternative
+    email.attach_alternative(html_content, "text/html")
+
+    # Send the email
+    email.send()
+    
+def send_email_rejection(id):
+    exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
+    userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    email = EmailMultiAlternatives(
+        subject='Foreign Currency Exchange Request Rejection',
+        from_email=settings.EMAIL_HOST_USER,  
+        to=['shekhar.dhakal@jbbl.com.np', exchnagedata.enteredBy], 
+    )
+    html_content = render_to_string('core/email/rejection_email.html', {
+        'username': f'{userdata.first_name} {userdata.last_name}', 
+        'remarks': exchnagedata.remarks,
+    })
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+    
+def generate_pdf(userdata, exchnagedata):
+    fcydenodetails = FCYDenoMasterTable.objects.filter(
+        masterid=exchnagedata.id).order_by('currency', 'deno')
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    logo_path = find('images/logo.png')
+    if logo_path:
+        img_width = 130
+        img_height = 45
+        page_width, page_height = A4
+        x_position = (page_width - img_width) / 2
+        y_position = 785
+        p.drawImage(logo_path, x_position, y_position,
+                    width=img_width, height=img_height)
+
+    p.setFillColor(colors.black)
+    p.line(0, 770, 600, 770)
+
+    text = "FOREIGN EXCHANGE ENCASHMENT RECEIPT"
+    p.setFont("Times-Bold", 16)
+    text_width = p.stringWidth(text)
+    page_width, _ = A4
+    x_position = (page_width - text_width) / 2
+    p.setFillColor('#0366ae')
+    p.drawString(x_position, 750, text)
+
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 12)
+    p.drawString(50, 730, f"Receipt No: {exchnagedata.refrenceid}")
+    p.drawString(50, 715, f"Date: {system_date}")
+
+    left_margin = 50
+    right_margin = A4[0] - 50
+
+    text_content = (
+        f'We hereby certify that we have purchased today foreign currency as mentioned below from M/S {userdata.first_name} {userdata.last_name}.'
+    )
+
+    text_x = left_margin
+    text_y = 685
+    text_width = right_margin - left_margin
+
+    lines = []
+    line = ''
+    for word in text_content.split():
+        if p.stringWidth(line + ' ' + word, "Times-Roman", 12) < text_width:
+            line += f'{word} '
+        else:
+            lines.append(line)
+            line = f'{word} '
+
+    lines.append(line)
+
+    p.setFont("Times-Roman", 12)
+    p.setFillColor(colors.black)
+    for line in lines:
+        p.drawString(text_x, text_y, line.strip())
+        text_y -= 15
+
+    text_y -= 15
+    table_height = (len(fcydenodetails)+2) * 15
+    table_y = text_y - table_height
+    table_data = [
+        ['Currency', 'Deno', 'Unit', 'Rate', 'Equivalent NPR']
+    ]
+
+    for fcy in fcydenodetails:
+        row = [
+            fcy.currency[:3],
+            fcy.deno,
+            fcy.unit,
+            fcy.rate,
+            fcy.equivalentNPR
+        ]
+        table_data.append(row)
+
+    table = Table(table_data, colWidths=100)
+
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d2a12a'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#0366ae'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Times-Bold'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Times-Roman'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige)
+    ]))
+
+    table.wrapOn(p, A4[0], A4[1])
+    table.drawOn(p, 50, table_y)
+
+    text_below_table_y = table_y - 15
+    p.setFillColor(colors.black)
+    p.setFont("Times-Bold", 12)
+    p.drawString(370, text_below_table_y,
+                 f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    text_below_table_y = table_y - 15
+
+    # Draw the text below the table
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 12)
+    text_width = A4[0] - 2 * 50
+    text_object = p.beginText(50, text_below_table_y - 20)
+    text_object.setFont("Times-Roman", 12)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.textLines(
+        f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
+    p.drawText(text_object)
+    p.drawString(50, text_below_table_y - 60,
+                 f"Customer's Signature:_______________________________")
+    p.drawString(50, text_below_table_y - 160,
+                 f"Signature & Stamp of the Bank")
+    p.drawString(50, 100, f"Note: This is electronically generated report. Please print this report and sign the document for further references.")
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+
+
+
 
 from django.db import connection
 from openpyxl.styles import Font
