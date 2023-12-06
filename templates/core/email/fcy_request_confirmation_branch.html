@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Foreign Currency Exchange Request Confirmation</title>
+  <title>FCY Exchange Request Confirmation</title>
   <style>
     /* Add your CSS styles here */
     body {
@@ -44,18 +44,21 @@
       <h2>FCY Exchange Request Confirmation</h2>
     </div>
     <div class="content">
-      <p>Dear {{name}},</p>
-      <p>Your Foreign Currency Exchange (FCY) request has been successfully submitted. Please visit the selected branch to complete the exchange process.</p>
-      <p>Details of your FCY request:</p>
+      <p>Dear {{branch}},</p>
+      <p>A user has requested a Foreign Currency Exchange through your branch. Please take necessary actions when the customer visits the branch.</p>
+      <p><strong>User Details:</strong></p>
       <ul>
-        <li><strong>Request ID:</strong> {{refrenceid}}</li>
-        <li><strong>Selected Branch:</strong> {{branch}}</li>
-        <li><strong>Date and Time:</strong> {{datetime}}</li>
-        <li><strong>Total NPR Amount:</strong> {{totalnpr}}</li>
+        <li><strong>Name:</strong> {{name}}</li>
+        <li><strong>Email:</strong> {{email}}</li>
+        <li><strong>Reference Id:</strong> {{refrenceid}}</li>
+        <li><strong>Company Name:</strong> {{company}}</li>
+        <li><strong>Requested Date:</strong> {{datetime}}</li>
       </ul>
-      <p>Thank you for using our services. If you have any questions or need further assistance, please feel free to contact us.</p>
-      <p>Best regards,<br>
-      JBBL FCY Exchange System</p>
+      <p>Please go through the mentioned link to view the requested details.</p>
+      <a class="button" href="{{ link }}">View Details</a>
+      <p>Thank you.<br>
+        Sincerely,<br>
+        JBBL FCY Exchange System</p>
     </div>
   </div>
 </body>

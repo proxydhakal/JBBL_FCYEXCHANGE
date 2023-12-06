@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserAccount
-
+from .models import UserAccount, UserDetails, UserDetailsResource
+from import_export.admin import ImportExportModelAdmin
 class UserAccountAdmin(UserAdmin):
     ordering = ['email']
     list_display = ('email', 'first_name', 'last_name', 'role', 'is_active')
@@ -21,3 +21,12 @@ class UserAccountAdmin(UserAdmin):
     )
 
 admin.site.register(UserAccount, UserAccountAdmin)
+
+class UserDetailsAdmin(ImportExportModelAdmin):
+    resource_class = UserDetailsResource
+    ordering = ['MainCode']
+    list_filter = ['MainCode']
+    search_fields = ['MainCode']
+    list_display = ('BranchCode', 'BranchName', 'MainCode', 'Name')
+
+admin.site.register(UserDetails, UserDetailsAdmin)

@@ -35,12 +35,18 @@ from reportlab.pdfgen import canvas
 from django.http import FileResponse
 from django.contrib.staticfiles.finders import find
 from openpyxl import Workbook
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.urls import reverse
+from urllib.parse import urljoin
+
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
-current_datetime = timezone.now()
+current_datetime = datetime.datetime.now()
 
 
 def home(request):
@@ -54,10 +60,9 @@ def home(request):
 @login_required
 def dashboard(request):
     template_name = 'core/dashboard/dashboard.html'
-
     list_times = FCYRateMaster.objects.filter(date=system_date)
     filtered_data = None
-    api_data = None  # Initialize api_data variable here
+    api_data = None 
 
     try:
         last_object = FCYRateMaster.objects.latest('id')
@@ -145,7 +150,32 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
                             deletedBy='-',
                             deletedDate=current_datetime,
                         )
-
+                branchdetail = Branches.objects.filter(BranchCode=request_master.preferredBranch).get() 
+                context = {
+                    'name': f'{request.user.first_name} {request.user.last_name}',
+                    'refrenceid': request_master.refrenceid,
+                    'branch': branchdetail.BranchName,
+                    'datetime': request_master.enterDate,
+                    'totalnpr':request_master.totalEquivalentNPR,
+                    'email':request.user.email,
+                    'company':request.user.company,
+                    'branchemail':branchdetail.EmailAddress,
+                    'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
+                }
+                html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
+                branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
+                
+                email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
+                                                settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                email.attach_alternative(html_content, 'text/html')
+                
+                branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
+                                                settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                branchemail.attach_alternative(branch_content, 'text/html')
+                
+                email.send(fail_silently=True)
+                branchemail.send(fail_silently=True)
+                
                 messages.success(
                     request, "Your FCY Exchange has been successfully created. Please visit the requested branch!")
                 return redirect('/fcyexchangerequest/')
@@ -154,13 +184,11 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
 
 
 class BranchListView(LoginRequiredMixin, View):
-    template_name = 'core/dashboard/branches.html'  # Replace with your template file
+    template_name = 'core/dashboard/branches.html'  
 
     def get(self, request):
-        # API URL
         api_url = 'https://jbbl.com.np/rest-api/forexapi/getbranch/'
 
-        # API credentials in the request body
         api_data = {
             'username': config('API_USERNAME'),
             'password': config('API_PASSWORD')
@@ -168,12 +196,11 @@ class BranchListView(LoginRequiredMixin, View):
 
         try:
             response = requests.post(api_url, data=api_data, verify=False)
-            response.raise_for_status()  # Check for any request errors
+            response.raise_for_status()  
 
             if response.status_code == 200:
                 data = response.json()
                 branches = data.get('Branches', [])
-                # Pass the data to the template
                 context = {'branches': branches}
                 return render(request, self.template_name, context)
             else:
@@ -642,7 +669,7 @@ def generate_xls_batch(request, id):
     for cell in ws["1:1"]:
         cell.font = Font(bold=True)
     data = [
-        ('FC1',exchnagedata.preferredBranch,userdata.client_code,f'{userdata.company}', f'{userdata.first_name}',f'{exchnagedata.refrenceid}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
+        ('FC1',exchnagedata.preferredBranch,userdata.client_code,f'{userdata.company[:20]}', f'{exchnagedata.depositedby[:20]}',f'{exchnagedata.refrenceid}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
     ]
 
     for row in rows:
@@ -650,7 +677,7 @@ def generate_xls_batch(request, id):
             row[0],
             row[6],
             row[4],
-            f'{userdata.company}',
+            f'{userdata.company[:20]}',
             row[1], 
             f'{row[9]}' '*' f'{row[10]}',
             row[8], 

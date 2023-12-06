@@ -9,11 +9,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView,DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin,UserPassesTestMixin
-from apps.accounts.models import UserAccount
+from apps.accounts.models import UserAccount, UserDetails
 from apps.accounts.forms import EditProfileForm
 from apps.branches.models import Branches
 from allauth.account.forms import ChangePasswordForm
-
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 class CustomSignupView(SignupView):
     form_class = CustomSignupForm
 
@@ -85,3 +86,31 @@ class ProfileNotificationView(View):
 
     def post(self, request, *args, **kwargs):
         return HttpResponse('POST request!')
+    
+@csrf_exempt
+def getuserprofiledata(request):
+    if request.method == 'POST':
+        username = request.POST.get('username', None)
+
+        if username:
+            # Fetch user profile data based on username (MainCode)
+            try:
+                user_profile = UserDetails.objects.get(MainCode=username)
+    
+                # Prepare the data to send in the response
+                data = {
+                    'BranchCode': user_profile.BranchCode,
+                    'BranchName': user_profile.BranchName,
+                    'Name': user_profile.Name,
+                    'Address': user_profile.Address,
+                    'Pan': user_profile.Pan,
+                    'Mobile': user_profile.Mobile,
+                }
+
+                return JsonResponse(data)
+            except UserDetails.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Username not provided'}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid responce'})

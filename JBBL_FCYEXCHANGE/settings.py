@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE',cast=int)
-TIME_ZONE = 'Asia/Kathmandu'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
