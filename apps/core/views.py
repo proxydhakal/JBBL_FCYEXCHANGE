@@ -216,78 +216,86 @@ class FCYExchangeRateUploadView(LoginRequiredMixin, View):
 
     def get(self, request):
         form = FCYExchangeRateUploadForm()
-        return render(request, self.template_name, {'form': form})
+        if(request.user.is_superuser == True):
+            return render(request, self.template_name, {'form': form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
 
     def post(self, request):
         form = FCYExchangeRateUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            excel_file = request.FILES['excel_file']
-            df = pd.read_excel(excel_file)
-            column_names = df.columns.tolist()
+        if(request.user.is_superuser == True):
+            if form.is_valid():
+                excel_file = request.FILES['excel_file']
+                df = pd.read_excel(excel_file)
+                column_names = df.columns.tolist()
 
-            print("Column Names:")
-            print(column_names)
+                print("Column Names:")
+                print(column_names)
 
-            if (len(column_names) == 7 and column_names[0] == 'Currency Code' and column_names[1] == 'Currency' and
-               column_names[2] == 'Unit' and column_names[3] == 'Buying Rate (Deno 50 or less)' and column_names[4] == 'Buying Rate (Deno 50 or above)' and
-               column_names[5] == 'Selling Rate' and column_names[6] == 'Prenium Rate'):
+                if (len(column_names) == 7 and column_names[0] == 'Currency Code' and column_names[1] == 'Currency' and
+                column_names[2] == 'Unit' and column_names[3] == 'Buying Rate (Deno 50 or less)' and column_names[4] == 'Buying Rate (Deno 50 or above)' and
+                column_names[5] == 'Selling Rate' and column_names[6] == 'Prenium Rate'):
 
-                Unit_values = df['Unit']
-                Buying_less__values = df['Buying Rate (Deno 50 or less)']
-                Buying_above__values = df['Buying Rate (Deno 50 or above)']
-                Selling_Rate_values = df['Selling Rate']
-                Prenium_Rate_values = df['Prenium Rate']
+                    Unit_values = df['Unit']
+                    Buying_less__values = df['Buying Rate (Deno 50 or less)']
+                    Buying_above__values = df['Buying Rate (Deno 50 or above)']
+                    Selling_Rate_values = df['Selling Rate']
+                    Prenium_Rate_values = df['Prenium Rate']
 
-                non_float_columns = []
+                    non_float_columns = []
 
-                # Check for non-float values in each column
-                columns = {
-                    'Buying Rate (Deno 50 or less)': Buying_less__values,
-                    'Buying Rate (Deno 50 or above)': Buying_above__values,
-                    'Selling Rate': Selling_Rate_values,
-                    'Prenium Rate': Prenium_Rate_values
-                }
-                if not Unit_values.apply(lambda x: isinstance(x, int)).all():
-                    non_float_columns.append('Unit')
+                    # Check for non-float values in each column
+                    columns = {
+                        'Buying Rate (Deno 50 or less)': Buying_less__values,
+                        'Buying Rate (Deno 50 or above)': Buying_above__values,
+                        'Selling Rate': Selling_Rate_values,
+                        'Prenium Rate': Prenium_Rate_values
+                    }
+                    if not Unit_values.apply(lambda x: isinstance(x, int)).all():
+                        non_float_columns.append('Unit')
 
-                for col_name, col_data in columns.items():
-                    if not col_data.apply(lambda x: isinstance(x, float)).all():
-                        non_float_columns.append(col_name)
+                    for col_name, col_data in columns.items():
+                        if not col_data.apply(lambda x: isinstance(x, float)).all():
+                            non_float_columns.append(col_name)
 
-                if len(non_float_columns) == 0:
-                    # All columns have float values
-                    rate_master = FCYRateMaster.objects.create(
-                        date=system_date,
-                        time=system_time,
-                        user=request.user.email
-                    )
-
-                    master_id = rate_master.pk
-
-                    for index, row in df.iterrows():
-                        FCYExchangeRate.objects.create(
-                            masterid=master_id,
-                            currency_code=row['Currency Code'],
-                            currency_unit=row['Unit'],
-                            currency=row['Currency'],
-                            buying_rate_deno_50_or_less=row['Buying Rate (Deno 50 or less)'],
-                            buying_rate_deno_50_or_above=row['Buying Rate (Deno 50 or above)'],
-                            selling_rate=row['Selling Rate'],
-                            premium_rate=row['Prenium Rate'],
+                    if len(non_float_columns) == 0:
+                        # All columns have float values
+                        rate_master = FCYRateMaster.objects.create(
+                            date=system_date,
+                            time=system_time,
+                            user=request.user.email
                         )
 
-                    messages.success(self.request, "Operation Successful!")
-                    return redirect('/dashboard/')
+                        master_id = rate_master.pk
+
+                        for index, row in df.iterrows():
+                            FCYExchangeRate.objects.create(
+                                masterid=master_id,
+                                currency_code=row['Currency Code'],
+                                currency_unit=row['Unit'],
+                                currency=row['Currency'],
+                                buying_rate_deno_50_or_less=row['Buying Rate (Deno 50 or less)'],
+                                buying_rate_deno_50_or_above=row['Buying Rate (Deno 50 or above)'],
+                                selling_rate=row['Selling Rate'],
+                                premium_rate=row['Prenium Rate'],
+                            )
+
+                        messages.success(self.request, "Operation Successful!")
+                        return redirect('/dashboard/')
+                    else:
+                        # Generate dynamic error message based on non-float columns
+                        error_message = f"Invalid Excel File: The following column(s) contain non-float values - {', '.join(non_float_columns)}."
+                        messages.error(self.request, error_message)
+                        return render(request, self.template_name, {'form': form})
                 else:
-                    # Generate dynamic error message based on non-float columns
-                    error_message = f"Invalid Excel File: The following column(s) contain non-float values - {', '.join(non_float_columns)}."
-                    messages.error(self.request, error_message)
+                    messages.error(
+                        self.request, "Invalid Excel File, Please check the column header and try again!")
                     return render(request, self.template_name, {'form': form})
             else:
-                messages.error(
-                    self.request, "Invalid Excel File, Please check the column header and try again!")
                 return render(request, self.template_name, {'form': form})
         else:
+            messages.error(self.request, "Unauthorized User")
             return render(request, self.template_name, {'form': form})
 
 
@@ -321,7 +329,7 @@ def getdenowiserate(request):
                     masterid=last_object.pk, currency_code=currency).first()
 
                 if filtered_data:
-                    if deno <= 50:
+                    if deno <= 49:
                         denorate = filtered_data.buying_rate_deno_50_or_above
                     else:
                         denorate = filtered_data.premium_rate
@@ -345,18 +353,49 @@ class FCYRequestView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/myfcyrequest.html'
 
     def get(self, request):
-        preferred_branch_subquery = Branches.objects.filter(
-            BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
-        customer_fullname = UserAccount.objects.annotate(
-            full_name=ExpressionWrapper(
-                Concat(F('first_name'), Value(' '), F('last_name')),
-                output_field=CharField()
-            )
-        ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
-        query_result = FCYExchangeRequestMaster.objects.annotate(
-            prefBranchName=Subquery(preferred_branch_subquery),
-            customer_fullname=Subquery(customer_fullname)
-        ).exclude(status='Deleted').order_by('-refrenceid').values()
+        if(request.user.role == 0):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(status='Deleted').order_by('-refrenceid').values()
+        elif(request.user.role == 1):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(status='Deleted').order_by('-refrenceid').filter(enteredBy = request.user.email).values()
+        elif(request.user.role == 2):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(status='Deleted').order_by('-refrenceid').filter(preferredBranch = request.user.branch).values()
+            
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
 
         return render(request, self.template_name, {'fcyrequest': query_result})
 
@@ -380,22 +419,26 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        fcydenodetails = FCYDenoMasterTable.objects.filter(
-            masterid=id).order_by('currency', 'deno')
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(
+                masterid=id).order_by('currency', 'deno')
 
-        # Create a dictionary to organize data by currency
-        data_by_currency = defaultdict(list)
-        # Group data by currency
-        for item in fcydenodetails:
-            currency = item.currency
-            data_by_currency[currency].append({
-                'deno': item.deno,
-                'unit': item.unit,
-                'rate': item.rate,
-                'equivalent_npr': item.equivalentNPR
-            })
-
-        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
+            # Create a dictionary to organize data by currency
+            data_by_currency = defaultdict(list)
+            # Group data by currency
+            for item in fcydenodetails:
+                currency = item.currency
+                data_by_currency[currency].append({
+                    'deno': item.deno,
+                    'unit': item.unit,
+                    'rate': item.rate,
+                    'equivalent_npr': item.equivalentNPR
+                })
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+        
 
     def post(self, request, *args, **kwargs):
         return HttpResponse('POST request!')
@@ -417,17 +460,21 @@ class FCYRequestEditView(LoginRequiredMixin, View):
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        fcydenodetails = FCYDenoMasterTable.objects.filter(
-            masterid=id, status='Requested')
-        form = DenoApprovedForm()
-        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id, status='Requested')
+            form = DenoApprovedForm()
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+        
 
     def post(self, request, *args, **kwargs):
         form = DenoApprovedForm(request.POST)
         id = kwargs.get('id')
         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
 
-        if fcymaster.enteredBy == request.user.email:
+        if fcymaster.enteredBy == request.user.email or request.user.role == 2:
             if form.is_valid():
                 action = form.cleaned_data['action']
                 if action == 'APPROVED':
@@ -517,8 +564,8 @@ def generate_pdf_receipt(request, id):
 
     p.setFillColor(colors.black)
     p.setFont("Times-Roman", 12)
-    p.drawString(50, 730, f"Receipt No: {exchnagedata.refrenceid}")
-    p.drawString(50, 715, f"Date: {system_date}")
+    p.drawString(50, 725, f"Receipt No: {exchnagedata.refrenceid}")
+    p.drawString(50, 710, f"Date: {system_date}")
 
     left_margin = 50
     right_margin = A4[0] - 50
@@ -807,7 +854,8 @@ def generate_xls_batch(request, id):
             '017' AS TRANCODE,
             -1 * FCYAMOUNT,
             Deno,
-            Unit
+            Unit,
+            Rate
         FROM (
             SELECT 
                 LEFT(d.currency, 3) AS SHORTCURRENCY,
@@ -818,15 +866,16 @@ def generate_xls_batch(request, id):
                 m."preferredBranch" AS BRANCHCODE,
                 d."deno" as Deno,
                 d."unit" as Unit,
+                d."rate" as Rate,
                 (d."deno" * d."unit") AS FCYAMOUNT,
                 ROW_NUMBER() OVER (PARTITION BY d.currency) AS rn
             FROM public.core_fcydenomastertable AS d
             JOIN public.branches_branchtelloraccount AS c ON c."CyDesc" = LEFT(d.currency, 3)
             JOIN public.core_fcyexchangerequestmaster AS m ON m."id" = d.masterid
             WHERE d.masterid = %s
-            GROUP BY d.currency, SHORTCURRENCY, c."MainCode", c."CyCode", m."preferredBranch", d."deno", d."unit"
+            GROUP BY d.currency, SHORTCURRENCY, c."MainCode", c."CyCode", m."preferredBranch", d."deno", d."unit", d."rate"
         ) AS subquery
-        GROUP BY currency, SHORTCURRENCY, "MainCode", "CyCode", BRANCHCODE, FCYAMOUNT, Deno, Unit;
+        GROUP BY currency, SHORTCURRENCY, "MainCode", "CyCode", BRANCHCODE, FCYAMOUNT, Deno, Unit, Rate;
     """
 
     with connection.cursor() as cursor:
@@ -859,7 +908,7 @@ def generate_xls_batch(request, id):
             row[4],
             f'{userdata.company[:20]}',
             row[1], 
-            f'{row[9]}' '*' f'{row[10]}',
+            f'{row[9]}' '*' f'{row[10]}' '*' f'{row[11]}',
             row[8], 
             row[3],
             row[7],   
