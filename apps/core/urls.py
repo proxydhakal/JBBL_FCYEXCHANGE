@@ -7,6 +7,7 @@ urlpatterns = [
     path('createfcyexchange/', views.FCYExchangeRequestCreateView.as_view(), name='createfcyexchange'),
     path('branches/', views.BranchListView.as_view(), name='branches'),
     path('fcyexchangerate/', views.FCYExchangeRateUploadView.as_view(), name='fcyexchangerate'),
+    path('fcyexchangerateview/', views.FCYExchnageRateView.as_view(), name='fcyexchangerateview'),
     path('fcyexchangerequest/', views.FCYRequestView.as_view(), name='fcyexchangerequest'),
     path('detail/fcyexchangerequest/<int:id>/', views.FCYRequestDetailView.as_view(), name='fcyexchangedetail'),
     path('edit/fcyexchangerequest/<int:id>/', views.FCYRequestEditView.as_view(), name='fcyexchangeedit'),

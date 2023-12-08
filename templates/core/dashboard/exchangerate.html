@@ -1,0 +1,56 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-dark bg-gradient-primary-to-secondary mb-4">
+        <div class="container-xl px-4">
+            <div class="page-header-content pt-4">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-auto mt-4">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="file"></i></div>
+                            Exchange Rates
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4">
+        <div class="card">
+            <div class="card-header text-center">For</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <input class="form-control" id="postTitleInput" type="date" placeholder="Enter your post title..." />
+                    </div>
+                    <div class="col-3">
+                        <input class="form-control" id="postTitleInput" type="date" placeholder="Enter your post title..." />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-25">Submit</button> 
+                </div>
+               
+            </div>
+        </div>
+    </div>
+</main>
+<script type="text/javascript">
+    (function () {
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple1').DataTable({
+                paging: true,
+                scrollY: '260px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });        
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple2').DataTable({
+                paging: true,
+                scrollY: '300px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });    
+    })();
+</script>
+{% endblock main %}

@@ -935,3 +935,15 @@ def generate_xls_batch(request, id):
     wb.save(response)
 
     return response
+
+
+class FCYExchnageRateView(LoginRequiredMixin, View):
+    template_name = 'core/dashboard/exchangerate.html'
+
+    def get(self, request):
+
+
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        return HttpResponse('POST request!')
