@@ -41,7 +41,8 @@ from django.conf import settings
 from django.urls import reverse
 from urllib.parse import urljoin
 from django.conf import settings
-
+from django.db import connection
+from openpyxl.styles import Font
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
@@ -150,35 +151,35 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
                             deletedBy='-',
                             deletedDate=current_datetime,
                         )
-                branchdetail = Branches.objects.filter(BranchCode=request_master.preferredBranch).get() 
-                context = {
-                    'name': f'{request.user.first_name} {request.user.last_name}',
-                    'refrenceid': request_master.refrenceid,
-                    'branch': branchdetail.BranchName,
-                    'datetime': request_master.enterDate,
-                    'totalnpr':request_master.totalEquivalentNPR,
-                    'email':request.user.email,
-                    'company':request.user.company,
-                    'branchemail':branchdetail.EmailAddress,
-                    'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
-                }
-                html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
-                branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
+                # branchdetail = Branches.objects.filter(BranchCode=request_master.preferredBranch).get() 
+                # context = {
+                #     'name': f'{request.user.first_name} {request.user.last_name}',
+                #     'refrenceid': request_master.refrenceid,
+                #     'branch': branchdetail.BranchName,
+                #     'datetime': request_master.enterDate,
+                #     'totalnpr':request_master.totalEquivalentNPR,
+                #     'email':request.user.email,
+                #     'company':request.user.company,
+                #     'branchemail':branchdetail.EmailAddress,
+                #     'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
+                # }
+                # html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
+                # branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
                 
-                email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
-                                                settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
-                email.attach_alternative(html_content, 'text/html')
+                # email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
+                #                                 settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                # email.attach_alternative(html_content, 'text/html')
                 
-                branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
-                                                settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
-                branchemail.attach_alternative(branch_content, 'text/html')
+                # branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
+                #                                 settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                # branchemail.attach_alternative(branch_content, 'text/html')
                 
-                email.send(fail_silently=True)
-                branchemail.send(fail_silently=True)
+                # email.send(fail_silently=True)
+                # branchemail.send(fail_silently=True)
                 
                 messages.success(
                     request, "Your FCY Exchange has been successfully created. Please visit the requested branch!")
-                return redirect('/fcyexchangerequest/')
+                return redirect(f'/editown/fcyexchangerequest/{request_master.id}/')
 
         return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
 
@@ -506,6 +507,76 @@ class FCYRequestEditView(LoginRequiredMixin, View):
         else:
             messages.error(request, "Unauthorized User!")
             return redirect('/fcyexchangerequest/')
+        
+        
+class FCYOwnRequestEditView(LoginRequiredMixin, View):
+    template_name = 'core/dashboard/editownfcyrequest.html'
+
+    def get(self, request, id):
+        preferred_branch_subquery = Branches.objects.filter(
+            BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+        customer_fullname = UserAccount.objects.annotate(
+            full_name=ExpressionWrapper(
+                Concat(F('first_name'), Value(' '), F('last_name')),
+                output_field=CharField()
+            )
+        ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+        fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).annotate(
+            prefBranchName=Subquery(preferred_branch_subquery),
+            customer_fullname=Subquery(customer_fullname)
+        ).exclude(status='Deleted').values().get()
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id, status='Requested')
+            form = DenoApprovedForm()
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+        
+
+    def post(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
+        action = request.POST.get('action')
+        if fcymaster.enteredBy == request.user.email:
+            if action:
+                    fcymaster.status = 'Forwarded'
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    branchdetail = Branches.objects.filter(BranchCode=fcymaster.preferredBranch).get() 
+                    context = {
+                        'name': f'{request.user.first_name} {request.user.last_name}',
+                        'refrenceid': fcymaster.refrenceid,
+                        'branch': branchdetail.BranchName,
+                        'datetime': fcymaster.enterDate,
+                        'totalnpr':fcymaster.totalEquivalentNPR,
+                        'email':request.user.email,
+                        'company':request.user.company,
+                        'branchemail':branchdetail.EmailAddress,
+                        'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
+                    }
+                    html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
+                    branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
+                    
+                    email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
+                                                    settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                    email.attach_alternative(html_content, 'text/html')
+                    
+                    branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
+                                                    settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                    branchemail.attach_alternative(branch_content, 'text/html')
+                    
+                    email.send(fail_silently=True)
+                    branchemail.send(fail_silently=True)
+                    messages.success(request, "Operation Successful!")
+                    return redirect('/fcyexchangerequest/') 
+            else:
+                messages.error(request, "Form data is invalid!")
+                return redirect(f'/edit/fcyexchangeeditown/{id}') 
+        else:
+            messages.error(request, "Unauthorized User!")
+            return redirect('/fcyexchangerequest/')
 
 @require_POST
 def update_fcy_data(request, fcy_id, masterId):
@@ -824,12 +895,6 @@ def generate_pdf(userdata, exchnagedata):
     return buffer
 
 
-
-
-
-from django.db import connection
-from openpyxl.styles import Font
-
 @login_required
 def generate_xls_batch(request, id):
     exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
@@ -941,9 +1006,46 @@ class FCYExchnageRateView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/exchangerate.html'
 
     def get(self, request):
+        currencies = CurrencyTable.objects.exclude(cyc_desc='NPR')
+        list_times = FCYRateMaster.objects.filter(date=system_date)
+        filtered_data = None
 
+        try:
+            last_object = FCYRateMaster.objects.latest('id')
+            filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        except ObjectDoesNotExist:
+            last_object = None
+            alert_message = "No data available in FCYRateMaster"
+            context = {
+                'filtered_data': filtered_data,
+                'list_times': list_times,
+                'last_object': last_object,
+                'alert_message': alert_message
+            }
 
-        return render(request, self.template_name)
+        context = {
+            'filtered_data': filtered_data,
+            'list_times': list_times,
+            'last_object': last_object,
+            'currencies':currencies
+        }
+
+        return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        return HttpResponse('POST request!')
+        date_value = request.POST.get('date')
+        selected_currency = request.POST.get('currency')
+        
+        try:
+            last_object = FCYRateMaster.objects.filter(date=date_value).latest('id')
+        except FCYRateMaster.DoesNotExist:
+            return render(request, self.template_name, {'message': "No data found in database!"})
+        except Exception as e:
+            return HttpResponse(f"An error occurred: {e}")
+        
+        last_object = get_object_or_404(FCYRateMaster, date=date_value)
+        filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        context = {
+            'date_filtered_data': filtered_data,
+        }
+        return render(request, self.template_name, context)
