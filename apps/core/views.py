@@ -43,6 +43,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.db import connection
 from openpyxl.styles import Font
+from django.db.models import Q, Subquery
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
@@ -58,38 +59,39 @@ def home(request):
         return render(request, template_name)
 
 
+
 @login_required
 def dashboard(request):
     template_name = 'core/dashboard/dashboard.html'
     list_times = FCYRateMaster.objects.filter(date=system_date)
     filtered_data = None
     api_data = None 
+    alert_message = None  # Initialize alert_message variable
 
     try:
         last_object = FCYRateMaster.objects.latest('id')
         filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        
         api_url = f"https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=20&from={system_date}&to={system_date}"
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)  # Set a timeout (e.g., 10 seconds)
 
         if response.status_code == 200:
             api_data = response.json()
+        else:
+            api_data = None 
     except ObjectDoesNotExist:
         last_object = None
         alert_message = "No data available in FCYRateMaster"
-        context = {
-            'filtered_data': filtered_data,
-            'list_times': list_times,
-            'last_object': last_object,
-            'api_data': api_data,  # Ensure api_data is included in the context here
-            'alert_message': alert_message
-        }
-        return render(request, template_name, context)
-
+    except requests.RequestException as e:
+        # Handle connection timeout or other request-related errors
+        alert_message = f"Error: {e}. Unable to fetch data from NRB API."
+    
     context = {
         'filtered_data': filtered_data,
         'list_times': list_times,
         'api_data': api_data,
-        'last_object': last_object
+        'last_object': last_object,
+        'alert_message': alert_message  # Include alert_message in the context
     }
     return render(request, template_name, context)
 
@@ -104,7 +106,12 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
         formset = DenoFormSet(request.POST or None)
         branches = Branches.objects.filter(Status='T', EmailStatus='T')
         currencies = CurrencyTable.objects.all()
-        return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
+        userdetails = UserAccount.objects.filter(email= request.user.email).get()
+        if userdetails.branch != '-' and userdetails.client_code != '-':
+            return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
+        else:
+            messages.warning(self.request, "Please Update Your Account Number and Branch before making FCY request.")
+            return redirect(f'/account/profile/{request.user.email}')
 
     def post(self, request):
         form = FCYExchangeRequestMasterForm(request.POST)
@@ -392,7 +399,7 @@ class FCYRequestView(LoginRequiredMixin, View):
             query_result = FCYExchangeRequestMaster.objects.annotate(
                 prefBranchName=Subquery(preferred_branch_subquery),
                 customer_fullname=Subquery(customer_fullname)
-            ).exclude(status='Deleted').order_by('-refrenceid').filter(preferredBranch = request.user.branch).values()
+            ).exclude(Q(status='Deleted') | Q(status='Requested')).order_by('-refrenceid').filter(preferredBranch=request.user.branch).values()
             
         else:
             messages.error(self.request, "Unauthorized User")
@@ -404,10 +411,18 @@ class FCYRequestView(LoginRequiredMixin, View):
         return HttpResponse('POST request!')
 
 
+from django.http import Http404
+
 class FCYRequestDetailView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/detailfcyrequest.html'
 
     def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  # Redirect to the home page or any appropriate page
+          
         preferred_branch_subquery = Branches.objects.filter(
             BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
         customer_fullname = UserAccount.objects.annotate(
@@ -416,13 +431,15 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
                 output_field=CharField()
             )
         ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+
         fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).annotate(
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+        
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role in [0, 2]:
             fcydenodetails = FCYDenoMasterTable.objects.filter(
-                masterid=id).order_by('currency', 'deno')
+                masterid=id).order_by('currency', '-deno')
 
             # Create a dictionary to organize data by currency
             data_by_currency = defaultdict(list)
@@ -437,18 +454,20 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
                 })
             return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
         else:
-            messages.error(self.request, "Unauthorized User")
+            messages.error(request, "Unauthorized User")
             return redirect('/dashboard/')
-        
 
-    def post(self, request, *args, **kwargs):
-        return HttpResponse('POST request!')
 
 
 class FCYRequestEditView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/editfcyrequest.html'
 
     def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  
         preferred_branch_subquery = Branches.objects.filter(
             BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
         customer_fullname = UserAccount.objects.annotate(
@@ -475,7 +494,7 @@ class FCYRequestEditView(LoginRequiredMixin, View):
         id = kwargs.get('id')
         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
 
-        if fcymaster.enteredBy == request.user.email or request.user.role == 2:
+        if fcymaster.enteredBy == request.user.email or request.user.role == 2 or request.user.role == 0:
             if form.is_valid():
                 action = form.cleaned_data['action']
                 if action == 'APPROVED':
@@ -513,6 +532,12 @@ class FCYOwnRequestEditView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/editownfcyrequest.html'
 
     def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  # Redirect to the home page or any appropriate page
+
         preferred_branch_subquery = Branches.objects.filter(
             BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
         customer_fullname = UserAccount.objects.annotate(
@@ -564,7 +589,7 @@ class FCYOwnRequestEditView(LoginRequiredMixin, View):
                     email.attach_alternative(html_content, 'text/html')
                     
                     branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
-                                                    settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                                                    settings.EMAIL_HOST_USER, [branchdetail.EmailAddress,'shekhar.dhakal@jbbl.com.np', ])
                     branchemail.attach_alternative(branch_content, 'text/html')
                     
                     email.send(fail_silently=True)
@@ -707,10 +732,10 @@ def generate_pdf_receipt(request, id):
 
     # Draw the text below the table
     p.setFillColor(colors.black)
-    p.setFont("Times-Roman", 12)
+    p.setFont("Times-Roman", 10)
     text_width = A4[0] - 2 * 50
     text_object = p.beginText(50, text_below_table_y - 20)
-    text_object.setFont("Times-Roman", 12)
+    text_object.setFont("Times-Roman", 10)
     text_object.setTextOrigin(50, text_below_table_y - 20)
     text_object.setTextOrigin(50, text_below_table_y - 20)
     text_object.setTextOrigin(50, text_below_table_y - 20)
@@ -733,6 +758,7 @@ def send_email_with_attachment(id):
     exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
     userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
 
+    branchdetail = Branches.objects.filter(BranchCode=exchnagedata.preferredBranch).get()
     # Generate the PDF using the function
     pdf_buffer = generate_pdf(userdata, exchnagedata)
 
@@ -887,6 +913,8 @@ def generate_pdf(userdata, exchnagedata):
                  f"Customer's Signature:_______________________________")
     p.drawString(50, text_below_table_y - 160,
                  f"Signature & Stamp of the Bank")
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 10)
     p.drawString(50, 100, f"Note: This is electronically generated report. Please print this report and sign the document for further references.")
 
     p.showPage()
@@ -899,6 +927,8 @@ def generate_pdf(userdata, exchnagedata):
 def generate_xls_batch(request, id):
     exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
     userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    if userdata.company is None:
+        userdata.company = '-'
     masterid = id
     with connection.cursor() as cursor:
         try:
@@ -955,15 +985,14 @@ def generate_xls_batch(request, id):
     ws['C1'] = 'MAINCODE'
     ws['D1'] = 'DESC1'
     ws['E1'] = 'DESC2'
-    ws['F1'] = 'DESC3'
-    ws['G1'] = 'AMOUNT'
-    ws['H1'] = 'LCYAMOUNT'
-    ws['I1'] = 'TRANCODE'
+    ws['F1'] = 'AMOUNT'
+    ws['G1'] = 'LCYAMOUNT'
+    ws['H1'] = 'TRANCODE'
     
     for cell in ws["1:1"]:
         cell.font = Font(bold=True)
     data = [
-        ('FC1',exchnagedata.preferredBranch,userdata.client_code,f'{userdata.company[:20]}', f'{exchnagedata.depositedby[:20]}',f'{exchnagedata.refrenceid}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
+        ('FC1',userdata.branch,userdata.client_code,f'{userdata.company[:20]}', f'{exchnagedata.depositedby[:20]}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
     ]
 
     for row in rows:
@@ -972,7 +1001,6 @@ def generate_xls_batch(request, id):
             row[6],
             row[4],
             f'{userdata.company[:20]}',
-            row[1], 
             f'{row[9]}' '*' f'{row[10]}' '*' f'{row[11]}',
             row[8], 
             row[3],
@@ -990,11 +1018,10 @@ def generate_xls_batch(request, id):
         ws.cell(row=row_num, column=6).value = row_data[5]
         ws.cell(row=row_num, column=7).value = row_data[6]
         ws.cell(row=row_num, column=8).value = row_data[7]
-        ws.cell(row=row_num, column=9).value = row_data[8]
 
     # Set the response content type for an Excel file
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="Batch File-{system_date}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="Batch File-{system_date}.xls"'
 
     # Save the workbook to the response
     wb.save(response)
@@ -1037,13 +1064,12 @@ class FCYExchnageRateView(LoginRequiredMixin, View):
         selected_currency = request.POST.get('currency')
         
         try:
-            last_object = FCYRateMaster.objects.filter(date=date_value).latest('id')
-        except FCYRateMaster.DoesNotExist:
-            return render(request, self.template_name, {'message': "No data found in database!"})
+            last_object = FCYRateMaster.objects.filter(date=date_value).order_by('-date').first()
+            if last_object is None:
+                return render(request, self.template_name, {'message': "No data found in database!"})
         except Exception as e:
             return HttpResponse(f"An error occurred: {e}")
-        
-        last_object = get_object_or_404(FCYRateMaster, date=date_value)
+            
         filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
         context = {
             'date_filtered_data': filtered_data,

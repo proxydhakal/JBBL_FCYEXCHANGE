@@ -68,7 +68,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=USER_STATUS, default=ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
-    company = models.CharField(max_length=254,null=True, blank=True)
+    company = models.CharField(max_length=254,null=False, blank=False, default='-')
     phone = models.CharField(max_length=50, null=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True, default='-')
     dob = models.DateField(blank=True, null=True, default='2022-02-02')

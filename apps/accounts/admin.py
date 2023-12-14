@@ -8,7 +8,7 @@ class UserAccountAdmin(UserAdmin):
 
     fieldsets = (
         (None, {'fields': ('email', 'password',)}),  # Include necessary fields like 'email', 'password'
-        ('Personal info', {'fields': ('first_name', 'last_name', 'client_code', 'profile_image', 'phone', 'location', 'dob', 'branch')}),  # Add other personal info fields
+        ('Personal info', {'fields': ('first_name', 'last_name', 'client_code', 'profile_image', 'phone', 'company', 'location', 'dob', 'branch')}),  # Add other personal info fields
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'role','groups', 'user_permissions')}),  # Include permissions and roles
         # Remove 'date_joined' from the fieldsets
     )
@@ -16,7 +16,7 @@ class UserAccountAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2','first_name', 'last_name', 'client_code', 'profile_image', 'phone','branch', 'location', 'dob','is_active', 'is_staff', 'is_superuser', 'role'),
+            'fields': ('email', 'password1', 'password2','first_name', 'last_name', 'client_code', 'profile_image', 'phone','branch', 'location','company', 'dob','is_active', 'is_staff', 'is_superuser', 'role'),
         }),
     )
 

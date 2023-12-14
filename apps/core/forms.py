@@ -10,7 +10,7 @@ class FCYExchangeRateUploadForm(forms.Form):
 
 class FCYExchangeRequestMasterForm(forms.ModelForm):
     preferredBranch = forms.ModelChoiceField(
-        queryset=Branches.objects.all(),
+        queryset=Branches.objects.filter(Status='T'),
         to_field_name='BranchCode',
         required=True,
         empty_label='Select Branch',
