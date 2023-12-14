@@ -35,12 +35,20 @@ from reportlab.pdfgen import canvas
 from django.http import FileResponse
 from django.contrib.staticfiles.finders import find
 from openpyxl import Workbook
-
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.urls import reverse
+from urllib.parse import urljoin
+from django.conf import settings
+from django.db import connection
+from openpyxl.styles import Font
+from django.db.models import Q, Subquery
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
-current_datetime = timezone.now()
+current_datetime = datetime.datetime.now()
 
 
 def home(request):
@@ -51,39 +59,39 @@ def home(request):
         return render(request, template_name)
 
 
+
 @login_required
 def dashboard(request):
     template_name = 'core/dashboard/dashboard.html'
-
     list_times = FCYRateMaster.objects.filter(date=system_date)
     filtered_data = None
-    api_data = None  # Initialize api_data variable here
+    api_data = None 
+    alert_message = None  # Initialize alert_message variable
 
     try:
         last_object = FCYRateMaster.objects.latest('id')
         filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        
         api_url = f"https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=20&from={system_date}&to={system_date}"
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)  # Set a timeout (e.g., 10 seconds)
 
         if response.status_code == 200:
             api_data = response.json()
+        else:
+            api_data = None 
     except ObjectDoesNotExist:
         last_object = None
         alert_message = "No data available in FCYRateMaster"
-        context = {
-            'filtered_data': filtered_data,
-            'list_times': list_times,
-            'last_object': last_object,
-            'api_data': api_data,  # Ensure api_data is included in the context here
-            'alert_message': alert_message
-        }
-        return render(request, template_name, context)
-
+    except requests.RequestException as e:
+        # Handle connection timeout or other request-related errors
+        alert_message = f"Error: {e}. Unable to fetch data from NRB API."
+    
     context = {
         'filtered_data': filtered_data,
         'list_times': list_times,
         'api_data': api_data,
-        'last_object': last_object
+        'last_object': last_object,
+        'alert_message': alert_message  # Include alert_message in the context
     }
     return render(request, template_name, context)
 
@@ -98,7 +106,12 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
         formset = DenoFormSet(request.POST or None)
         branches = Branches.objects.filter(Status='T', EmailStatus='T')
         currencies = CurrencyTable.objects.all()
-        return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
+        userdetails = UserAccount.objects.filter(email= request.user.email).get()
+        if userdetails.branch != '-' and userdetails.client_code != '-':
+            return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
+        else:
+            messages.warning(self.request, "Please Update Your Account Number and Branch before making FCY request.")
+            return redirect(f'/account/profile/{request.user.email}')
 
     def post(self, request):
         form = FCYExchangeRequestMasterForm(request.POST)
@@ -145,22 +158,45 @@ class FCYExchangeRequestCreateView(LoginRequiredMixin, View):
                             deletedBy='-',
                             deletedDate=current_datetime,
                         )
-
+                # branchdetail = Branches.objects.filter(BranchCode=request_master.preferredBranch).get() 
+                # context = {
+                #     'name': f'{request.user.first_name} {request.user.last_name}',
+                #     'refrenceid': request_master.refrenceid,
+                #     'branch': branchdetail.BranchName,
+                #     'datetime': request_master.enterDate,
+                #     'totalnpr':request_master.totalEquivalentNPR,
+                #     'email':request.user.email,
+                #     'company':request.user.company,
+                #     'branchemail':branchdetail.EmailAddress,
+                #     'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
+                # }
+                # html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
+                # branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
+                
+                # email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
+                #                                 settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                # email.attach_alternative(html_content, 'text/html')
+                
+                # branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
+                #                                 settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                # branchemail.attach_alternative(branch_content, 'text/html')
+                
+                # email.send(fail_silently=True)
+                # branchemail.send(fail_silently=True)
+                
                 messages.success(
                     request, "Your FCY Exchange has been successfully created. Please visit the requested branch!")
-                return redirect('/fcyexchangerequest/')
+                return redirect(f'/editown/fcyexchangerequest/{request_master.id}/')
 
         return render(request, self.template_name, {'form': form, 'formset': formset, 'branches': branches, 'currencies': currencies})
 
 
 class BranchListView(LoginRequiredMixin, View):
-    template_name = 'core/dashboard/branches.html'  # Replace with your template file
+    template_name = 'core/dashboard/branches.html'  
 
     def get(self, request):
-        # API URL
         api_url = 'https://jbbl.com.np/rest-api/forexapi/getbranch/'
 
-        # API credentials in the request body
         api_data = {
             'username': config('API_USERNAME'),
             'password': config('API_PASSWORD')
@@ -168,12 +204,11 @@ class BranchListView(LoginRequiredMixin, View):
 
         try:
             response = requests.post(api_url, data=api_data, verify=False)
-            response.raise_for_status()  # Check for any request errors
+            response.raise_for_status()  
 
             if response.status_code == 200:
                 data = response.json()
                 branches = data.get('Branches', [])
-                # Pass the data to the template
                 context = {'branches': branches}
                 return render(request, self.template_name, context)
             else:
@@ -189,78 +224,86 @@ class FCYExchangeRateUploadView(LoginRequiredMixin, View):
 
     def get(self, request):
         form = FCYExchangeRateUploadForm()
-        return render(request, self.template_name, {'form': form})
+        if(request.user.is_superuser == True):
+            return render(request, self.template_name, {'form': form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
 
     def post(self, request):
         form = FCYExchangeRateUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            excel_file = request.FILES['excel_file']
-            df = pd.read_excel(excel_file)
-            column_names = df.columns.tolist()
+        if(request.user.is_superuser == True):
+            if form.is_valid():
+                excel_file = request.FILES['excel_file']
+                df = pd.read_excel(excel_file)
+                column_names = df.columns.tolist()
 
-            print("Column Names:")
-            print(column_names)
+                print("Column Names:")
+                print(column_names)
 
-            if (len(column_names) == 7 and column_names[0] == 'Currency Code' and column_names[1] == 'Currency' and
-               column_names[2] == 'Unit' and column_names[3] == 'Buying Rate (Deno 50 or less)' and column_names[4] == 'Buying Rate (Deno 50 or above)' and
-               column_names[5] == 'Selling Rate' and column_names[6] == 'Prenium Rate'):
+                if (len(column_names) == 7 and column_names[0] == 'Currency Code' and column_names[1] == 'Currency' and
+                column_names[2] == 'Unit' and column_names[3] == 'Buying Rate (Deno 50 or less)' and column_names[4] == 'Buying Rate (Deno 50 or above)' and
+                column_names[5] == 'Selling Rate' and column_names[6] == 'Prenium Rate'):
 
-                Unit_values = df['Unit']
-                Buying_less__values = df['Buying Rate (Deno 50 or less)']
-                Buying_above__values = df['Buying Rate (Deno 50 or above)']
-                Selling_Rate_values = df['Selling Rate']
-                Prenium_Rate_values = df['Prenium Rate']
+                    Unit_values = df['Unit']
+                    Buying_less__values = df['Buying Rate (Deno 50 or less)']
+                    Buying_above__values = df['Buying Rate (Deno 50 or above)']
+                    Selling_Rate_values = df['Selling Rate']
+                    Prenium_Rate_values = df['Prenium Rate']
 
-                non_float_columns = []
+                    non_float_columns = []
 
-                # Check for non-float values in each column
-                columns = {
-                    'Buying Rate (Deno 50 or less)': Buying_less__values,
-                    'Buying Rate (Deno 50 or above)': Buying_above__values,
-                    'Selling Rate': Selling_Rate_values,
-                    'Prenium Rate': Prenium_Rate_values
-                }
-                if not Unit_values.apply(lambda x: isinstance(x, int)).all():
-                    non_float_columns.append('Unit')
+                    # Check for non-float values in each column
+                    columns = {
+                        'Buying Rate (Deno 50 or less)': Buying_less__values,
+                        'Buying Rate (Deno 50 or above)': Buying_above__values,
+                        'Selling Rate': Selling_Rate_values,
+                        'Prenium Rate': Prenium_Rate_values
+                    }
+                    if not Unit_values.apply(lambda x: isinstance(x, int)).all():
+                        non_float_columns.append('Unit')
 
-                for col_name, col_data in columns.items():
-                    if not col_data.apply(lambda x: isinstance(x, float)).all():
-                        non_float_columns.append(col_name)
+                    for col_name, col_data in columns.items():
+                        if not col_data.apply(lambda x: isinstance(x, float)).all():
+                            non_float_columns.append(col_name)
 
-                if len(non_float_columns) == 0:
-                    # All columns have float values
-                    rate_master = FCYRateMaster.objects.create(
-                        date=system_date,
-                        time=system_time,
-                        user=request.user.email
-                    )
-
-                    master_id = rate_master.pk
-
-                    for index, row in df.iterrows():
-                        FCYExchangeRate.objects.create(
-                            masterid=master_id,
-                            currency_code=row['Currency Code'],
-                            currency_unit=row['Unit'],
-                            currency=row['Currency'],
-                            buying_rate_deno_50_or_less=row['Buying Rate (Deno 50 or less)'],
-                            buying_rate_deno_50_or_above=row['Buying Rate (Deno 50 or above)'],
-                            selling_rate=row['Selling Rate'],
-                            premium_rate=row['Prenium Rate'],
+                    if len(non_float_columns) == 0:
+                        # All columns have float values
+                        rate_master = FCYRateMaster.objects.create(
+                            date=system_date,
+                            time=system_time,
+                            user=request.user.email
                         )
 
-                    messages.success(self.request, "Operation Successful!")
-                    return redirect('/dashboard/')
+                        master_id = rate_master.pk
+
+                        for index, row in df.iterrows():
+                            FCYExchangeRate.objects.create(
+                                masterid=master_id,
+                                currency_code=row['Currency Code'],
+                                currency_unit=row['Unit'],
+                                currency=row['Currency'],
+                                buying_rate_deno_50_or_less=row['Buying Rate (Deno 50 or less)'],
+                                buying_rate_deno_50_or_above=row['Buying Rate (Deno 50 or above)'],
+                                selling_rate=row['Selling Rate'],
+                                premium_rate=row['Prenium Rate'],
+                            )
+
+                        messages.success(self.request, "Operation Successful!")
+                        return redirect('/dashboard/')
+                    else:
+                        # Generate dynamic error message based on non-float columns
+                        error_message = f"Invalid Excel File: The following column(s) contain non-float values - {', '.join(non_float_columns)}."
+                        messages.error(self.request, error_message)
+                        return render(request, self.template_name, {'form': form})
                 else:
-                    # Generate dynamic error message based on non-float columns
-                    error_message = f"Invalid Excel File: The following column(s) contain non-float values - {', '.join(non_float_columns)}."
-                    messages.error(self.request, error_message)
+                    messages.error(
+                        self.request, "Invalid Excel File, Please check the column header and try again!")
                     return render(request, self.template_name, {'form': form})
             else:
-                messages.error(
-                    self.request, "Invalid Excel File, Please check the column header and try again!")
                 return render(request, self.template_name, {'form': form})
         else:
+            messages.error(self.request, "Unauthorized User")
             return render(request, self.template_name, {'form': form})
 
 
@@ -294,7 +337,7 @@ def getdenowiserate(request):
                     masterid=last_object.pk, currency_code=currency).first()
 
                 if filtered_data:
-                    if deno <= 50:
+                    if deno <= 49:
                         denorate = filtered_data.buying_rate_deno_50_or_above
                     else:
                         denorate = filtered_data.premium_rate
@@ -318,28 +361,68 @@ class FCYRequestView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/myfcyrequest.html'
 
     def get(self, request):
-        preferred_branch_subquery = Branches.objects.filter(
-            BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
-        customer_fullname = UserAccount.objects.annotate(
-            full_name=ExpressionWrapper(
-                Concat(F('first_name'), Value(' '), F('last_name')),
-                output_field=CharField()
-            )
-        ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
-        query_result = FCYExchangeRequestMaster.objects.annotate(
-            prefBranchName=Subquery(preferred_branch_subquery),
-            customer_fullname=Subquery(customer_fullname)
-        ).exclude(status='Deleted').values()
+        if(request.user.role == 0):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(status='Deleted').order_by('-refrenceid').values()
+        elif(request.user.role == 1):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(status='Deleted').order_by('-refrenceid').filter(enteredBy = request.user.email).values()
+        elif(request.user.role == 2):
+            preferred_branch_subquery = Branches.objects.filter(
+                BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+            customer_fullname = UserAccount.objects.annotate(
+                full_name=ExpressionWrapper(
+                    Concat(F('first_name'), Value(' '), F('last_name')),
+                    output_field=CharField()
+                )
+            ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+            query_result = FCYExchangeRequestMaster.objects.annotate(
+                prefBranchName=Subquery(preferred_branch_subquery),
+                customer_fullname=Subquery(customer_fullname)
+            ).exclude(Q(status='Deleted') | Q(status='Requested')).order_by('-refrenceid').filter(preferredBranch=request.user.branch).values()
+            
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+
         return render(request, self.template_name, {'fcyrequest': query_result})
 
     def post(self, request, *args, **kwargs):
         return HttpResponse('POST request!')
 
 
+from django.http import Http404
+
 class FCYRequestDetailView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/detailfcyrequest.html'
 
     def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  # Redirect to the home page or any appropriate page
+          
         preferred_branch_subquery = Branches.objects.filter(
             BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
         customer_fullname = UserAccount.objects.annotate(
@@ -348,35 +431,43 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
                 output_field=CharField()
             )
         ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+
         fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).annotate(
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        fcydenodetails = FCYDenoMasterTable.objects.filter(
-            masterid=id).order_by('currency', 'deno')
+        
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role in [0, 2]:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(
+                masterid=id).order_by('currency', '-deno')
 
-        # Create a dictionary to organize data by currency
-        data_by_currency = defaultdict(list)
-        # Group data by currency
-        for item in fcydenodetails:
-            currency = item.currency
-            data_by_currency[currency].append({
-                'deno': item.deno,
-                'unit': item.unit,
-                'rate': item.rate,
-                'equivalent_npr': item.equivalentNPR
-            })
+            # Create a dictionary to organize data by currency
+            data_by_currency = defaultdict(list)
+            # Group data by currency
+            for item in fcydenodetails:
+                currency = item.currency
+                data_by_currency[currency].append({
+                    'deno': item.deno,
+                    'unit': item.unit,
+                    'rate': item.rate,
+                    'equivalent_npr': item.equivalentNPR
+                })
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
+        else:
+            messages.error(request, "Unauthorized User")
+            return redirect('/dashboard/')
 
-        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
-
-    def post(self, request, *args, **kwargs):
-        return HttpResponse('POST request!')
 
 
 class FCYRequestEditView(LoginRequiredMixin, View):
     template_name = 'core/dashboard/editfcyrequest.html'
 
     def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  
         preferred_branch_subquery = Branches.objects.filter(
             BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
         customer_fullname = UserAccount.objects.annotate(
@@ -389,37 +480,125 @@ class FCYRequestEditView(LoginRequiredMixin, View):
             prefBranchName=Subquery(preferred_branch_subquery),
             customer_fullname=Subquery(customer_fullname)
         ).exclude(status='Deleted').values().get()
-        fcydenodetails = FCYDenoMasterTable.objects.filter(
-            masterid=id, status='Requested')
-        form = DenoApprovedForm()
-        return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id, status='Requested')
+            form = DenoApprovedForm()
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+        
 
     def post(self, request, *args, **kwargs):
         form = DenoApprovedForm(request.POST)
-        id = kwargs.get('id')  # Retrieve 'id' from kwargs
+        id = kwargs.get('id')
         fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
 
-        if fcymaster.enteredBy == request.user.email:
+        if fcymaster.enteredBy == request.user.email or request.user.role == 2 or request.user.role == 0:
             if form.is_valid():
                 action = form.cleaned_data['action']
                 if action == 'APPROVED':
                     fcymaster.status = 'Approved'
+                    fcymaster.remarks = form.cleaned_data['remarks']
+                    fcymaster.depositedby = form.cleaned_data['depositedby']
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    send_email_with_attachment(id)
                 elif action == 'REJECTED':
                     fcymaster.status = 'Rejected'
+                    fcymaster.remarks = form.cleaned_data['remarks']
+                    fcymaster.depositedby = form.cleaned_data['depositedby']
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    send_email_rejection(id)
                 else:
                     messages.error(request, "Operation Unsuccessful!")
-                    return redirect(f'/edit/fcyexchangerequest/{id}')  # Redirect with id
+                    return redirect(f'/edit/fcyexchangerequest/{id}') 
 
-                fcymaster.remarks = form.cleaned_data['remarks']
-                fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
-                fcymaster.updateDate = current_datetime
-                fcymaster.save()
 
                 messages.success(request, "Operation Successful!")
-                return redirect('/fcyexchangerequest/')  # Redirect with id
+                return redirect('/fcyexchangerequest/') 
             else:
                 messages.error(request, "Form data is invalid!")
-                return redirect(f'/edit/fcyexchangerequest/{id}')  # Redirect with id
+                return redirect(f'/edit/fcyexchangerequest/{id}') 
+        else:
+            messages.error(request, "Unauthorized User!")
+            return redirect('/fcyexchangerequest/')
+        
+        
+class FCYOwnRequestEditView(LoginRequiredMixin, View):
+    template_name = 'core/dashboard/editownfcyrequest.html'
+
+    def get(self, request, id):
+        try:
+            fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+        except FCYExchangeRequestMaster.DoesNotExist:
+            messages.error(request, "Requested ID does not exist.")
+            return redirect('/dashboard/')  # Redirect to the home page or any appropriate page
+
+        preferred_branch_subquery = Branches.objects.filter(
+            BranchCode=OuterRef('preferredBranch')).values('BranchName')[:1]
+        customer_fullname = UserAccount.objects.annotate(
+            full_name=ExpressionWrapper(
+                Concat(F('first_name'), Value(' '), F('last_name')),
+                output_field=CharField()
+            )
+        ).filter(email=OuterRef('enteredBy')).values('full_name')[:1]
+        fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).annotate(
+            prefBranchName=Subquery(preferred_branch_subquery),
+            customer_fullname=Subquery(customer_fullname)
+        ).exclude(status='Deleted').values().get()
+        if request.user.email == fcyrequest['enteredBy'] or request.user.role == 0 or request.user.role == 2:
+            fcydenodetails = FCYDenoMasterTable.objects.filter(masterid=id, status='Requested')
+            form = DenoApprovedForm()
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'fcydenodetails': fcydenodetails, 'form':form})
+        else:
+            messages.error(self.request, "Unauthorized User")
+            return redirect('/dashboard/')
+        
+
+    def post(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        fcymaster = get_object_or_404(FCYExchangeRequestMaster, id=id)
+        action = request.POST.get('action')
+        if fcymaster.enteredBy == request.user.email:
+            if action:
+                    fcymaster.status = 'Forwarded'
+                    fcymaster.updatedBy = request.user.email if request.user.is_authenticated else ''
+                    fcymaster.updateDate = current_datetime
+                    fcymaster.save()
+                    branchdetail = Branches.objects.filter(BranchCode=fcymaster.preferredBranch).get() 
+                    context = {
+                        'name': f'{request.user.first_name} {request.user.last_name}',
+                        'refrenceid': fcymaster.refrenceid,
+                        'branch': branchdetail.BranchName,
+                        'datetime': fcymaster.enterDate,
+                        'totalnpr':fcymaster.totalEquivalentNPR,
+                        'email':request.user.email,
+                        'company':request.user.company,
+                        'branchemail':branchdetail.EmailAddress,
+                        'link':urljoin(request.build_absolute_uri('/'), reverse('fcyexchangerequest'))
+                    }
+                    html_content = render_to_string('core/email/fcy_request_confirmation.html', context)
+                    branch_content = render_to_string('core/email/fcy_request_confirmation_branch.html', context)
+                    
+                    email = EmailMultiAlternatives('FCY Exchange Confirmation', 'FCY Exchange Confirmation',
+                                                    settings.EMAIL_HOST_USER, [request.user.email,'shekhar.dhakal@jbbl.com.np', ])
+                    email.attach_alternative(html_content, 'text/html')
+                    
+                    branchemail = EmailMultiAlternatives('FCY Exchange Notification', 'FCY Exchange Notification',
+                                                    settings.EMAIL_HOST_USER, [branchdetail.EmailAddress,'shekhar.dhakal@jbbl.com.np', ])
+                    branchemail.attach_alternative(branch_content, 'text/html')
+                    
+                    email.send(fail_silently=True)
+                    branchemail.send(fail_silently=True)
+                    messages.success(request, "Operation Successful!")
+                    return redirect('/fcyexchangerequest/') 
+            else:
+                messages.error(request, "Form data is invalid!")
+                return redirect(f'/edit/fcyexchangeeditown/{id}') 
         else:
             messages.error(request, "Unauthorized User!")
             return redirect('/fcyexchangerequest/')
@@ -453,6 +632,173 @@ def update_fcy_data(request, fcy_id, masterId):
 def generate_pdf_receipt(request, id):
     exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
     userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    fcydenodetails = FCYDenoMasterTable.objects.filter(
+        masterid=exchnagedata.id).order_by('currency', 'deno')
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    logo_path = find('images/logo.png')
+    if logo_path:
+        img_width = 130
+        img_height = 45
+        page_width, page_height = A4
+        x_position = (page_width - img_width) / 2
+        y_position = 785
+        p.drawImage(logo_path, x_position, y_position,
+                    width=img_width, height=img_height)
+
+    p.setFillColor(colors.black)
+    p.line(0, 770, 600, 770)
+
+    text = "FOREIGN EXCHANGE ENCASHMENT RECEIPT"
+    p.setFont("Times-Bold", 16)
+    text_width = p.stringWidth(text)
+    page_width, _ = A4
+    x_position = (page_width - text_width) / 2
+    p.setFillColor('#0366ae')
+    p.drawString(x_position, 750, text)
+
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 12)
+    p.drawString(50, 725, f"Receipt No: {exchnagedata.refrenceid}")
+    p.drawString(50, 710, f"Date: {system_date}")
+
+    left_margin = 50
+    right_margin = A4[0] - 50
+
+    text_content = (
+        f'We hereby certify that we have purchased today foreign currency as mentioned below from M/S {userdata.first_name} {userdata.last_name}.'
+    )
+
+    text_x = left_margin
+    text_y = 685
+    text_width = right_margin - left_margin
+
+    lines = []
+    line = ''
+    for word in text_content.split():
+        if p.stringWidth(line + ' ' + word, "Times-Roman", 12) < text_width:
+            line += f'{word} '
+        else:
+            lines.append(line)
+            line = f'{word} '
+
+    lines.append(line)
+
+    p.setFont("Times-Roman", 12)
+    p.setFillColor(colors.black)
+    for line in lines:
+        p.drawString(text_x, text_y, line.strip())
+        text_y -= 15
+
+    text_y -= 15
+    table_height = (len(fcydenodetails)+2) * 15
+    table_y = text_y - table_height
+    table_data = [
+        ['Currency', 'Deno', 'Unit', 'Rate', 'Equivalent NPR']
+    ]
+
+    for fcy in fcydenodetails:
+        row = [
+            fcy.currency[:3],
+            fcy.deno,
+            fcy.unit,
+            fcy.rate,
+            fcy.equivalentNPR
+        ]
+        table_data.append(row)
+
+    table = Table(table_data, colWidths=100)
+
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d2a12a'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#0366ae'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Times-Bold'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Times-Roman'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige)
+    ]))
+
+    table.wrapOn(p, A4[0], A4[1])
+    table.drawOn(p, 50, table_y)
+
+    text_below_table_y = table_y - 15
+    p.setFillColor(colors.black)
+    p.setFont("Times-Bold", 12)
+    p.drawString(370, text_below_table_y,
+                 f"Total Equivalent NPR: {exchnagedata.totalEquivalentNPR}")
+    text_below_table_y = table_y - 15
+
+    # Draw the text below the table
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 10)
+    text_width = A4[0] - 2 * 50
+    text_object = p.beginText(50, text_below_table_y - 20)
+    text_object.setFont("Times-Roman", 10)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.setTextOrigin(50, text_below_table_y - 20)
+    text_object.textLines(
+        f"NPR Amount in Words: {exchnagedata.totalEquivalentNPRToWords}")
+    p.drawText(text_object)
+    p.drawString(50, text_below_table_y - 60,
+                 f"Customer's Signature:_______________________________")
+    p.drawString(50, text_below_table_y - 160,
+                 f"Signature & Stamp of the Bank")
+    
+    
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf')
+
+
+def send_email_with_attachment(id):
+    exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
+    userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+
+    branchdetail = Branches.objects.filter(BranchCode=exchnagedata.preferredBranch).get()
+    # Generate the PDF using the function
+    pdf_buffer = generate_pdf(userdata, exchnagedata)
+
+    # Create an EmailMultiAlternatives object to include both HTML and text content
+    email = EmailMultiAlternatives(
+        subject='Foreign Exchange Encashment Receipt',
+        from_email=settings.EMAIL_HOST_USER,  # Replace with your sender email address
+        to=['shekhar.dhakal@jbbl.com.np', exchnagedata.enteredBy],  # Replace with recipient email address
+    )
+
+    # Attach the generated PDF file to the email
+    email.attach(f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf', pdf_buffer.getvalue(), 'application/pdf')
+
+    # Email body (HTML content)
+    html_content = render_to_string('core/email/encashment_receipt_template.html', {
+        'username': f'{userdata.first_name} {userdata.last_name}',  
+    })
+
+    # Attach HTML content as an alternative
+    email.attach_alternative(html_content, "text/html")
+
+    # Send the email
+    email.send()
+    
+def send_email_rejection(id):
+    exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
+    userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    email = EmailMultiAlternatives(
+        subject='Foreign Currency Exchange Request Rejection',
+        from_email=settings.EMAIL_HOST_USER,  
+        to=['shekhar.dhakal@jbbl.com.np', exchnagedata.enteredBy], 
+    )
+    html_content = render_to_string('core/email/rejection_email.html', {
+        'username': f'{userdata.first_name} {userdata.last_name}', 
+        'remarks': exchnagedata.remarks,
+    })
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+    
+def generate_pdf(userdata, exchnagedata):
     fcydenodetails = FCYDenoMasterTable.objects.filter(
         masterid=exchnagedata.id).order_by('currency', 'deno')
 
@@ -567,19 +913,22 @@ def generate_pdf_receipt(request, id):
                  f"Customer's Signature:_______________________________")
     p.drawString(50, text_below_table_y - 160,
                  f"Signature & Stamp of the Bank")
+    p.setFillColor(colors.black)
+    p.setFont("Times-Roman", 10)
+    p.drawString(50, 100, f"Note: This is electronically generated report. Please print this report and sign the document for further references.")
 
     p.showPage()
     p.save()
     buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f'{userdata.first_name}-{userdata.last_name}-{exchnagedata.date} FCY_Exchange_report.pdf')
+    return buffer
 
-from django.db import connection
-from openpyxl.styles import Font
 
 @login_required
 def generate_xls_batch(request, id):
     exchnagedata = get_object_or_404(FCYExchangeRequestMaster, id=id)
     userdata = UserAccount.objects.get(email=exchnagedata.enteredBy)
+    if userdata.company is None:
+        userdata.company = '-'
     masterid = id
     with connection.cursor() as cursor:
         try:
@@ -600,7 +949,8 @@ def generate_xls_batch(request, id):
             '017' AS TRANCODE,
             -1 * FCYAMOUNT,
             Deno,
-            Unit
+            Unit,
+            Rate
         FROM (
             SELECT 
                 LEFT(d.currency, 3) AS SHORTCURRENCY,
@@ -611,15 +961,16 @@ def generate_xls_batch(request, id):
                 m."preferredBranch" AS BRANCHCODE,
                 d."deno" as Deno,
                 d."unit" as Unit,
+                d."rate" as Rate,
                 (d."deno" * d."unit") AS FCYAMOUNT,
                 ROW_NUMBER() OVER (PARTITION BY d.currency) AS rn
             FROM public.core_fcydenomastertable AS d
             JOIN public.branches_branchtelloraccount AS c ON c."CyDesc" = LEFT(d.currency, 3)
             JOIN public.core_fcyexchangerequestmaster AS m ON m."id" = d.masterid
             WHERE d.masterid = %s
-            GROUP BY d.currency, SHORTCURRENCY, c."MainCode", c."CyCode", m."preferredBranch", d."deno", d."unit"
+            GROUP BY d.currency, SHORTCURRENCY, c."MainCode", c."CyCode", m."preferredBranch", d."deno", d."unit", d."rate"
         ) AS subquery
-        GROUP BY currency, SHORTCURRENCY, "MainCode", "CyCode", BRANCHCODE, FCYAMOUNT, Deno, Unit;
+        GROUP BY currency, SHORTCURRENCY, "MainCode", "CyCode", BRANCHCODE, FCYAMOUNT, Deno, Unit, Rate;
     """
 
     with connection.cursor() as cursor:
@@ -634,15 +985,14 @@ def generate_xls_batch(request, id):
     ws['C1'] = 'MAINCODE'
     ws['D1'] = 'DESC1'
     ws['E1'] = 'DESC2'
-    ws['F1'] = 'DESC3'
-    ws['G1'] = 'AMOUNT'
-    ws['H1'] = 'LCYAMOUNT'
-    ws['I1'] = 'TRANCODE'
+    ws['F1'] = 'AMOUNT'
+    ws['G1'] = 'LCYAMOUNT'
+    ws['H1'] = 'TRANCODE'
     
     for cell in ws["1:1"]:
         cell.font = Font(bold=True)
     data = [
-        ('FC1',exchnagedata.preferredBranch,userdata.client_code,f'{userdata.company}', f'{userdata.first_name}',f'{exchnagedata.refrenceid}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
+        ('FC1',userdata.branch,userdata.client_code,f'{userdata.company[:20]}', f'{exchnagedata.depositedby[:20]}', exchnagedata.totalEquivalentNPR, exchnagedata.totalEquivalentNPR, '517'),
     ]
 
     for row in rows:
@@ -650,9 +1000,8 @@ def generate_xls_batch(request, id):
             row[0],
             row[6],
             row[4],
-            f'{userdata.company}',
-            row[1], 
-            f'{row[9]}' '*' f'{row[10]}',
+            f'{userdata.company[:20]}',
+            f'{row[9]}' '*' f'{row[10]}' '*' f'{row[11]}',
             row[8], 
             row[3],
             row[7],   
@@ -669,13 +1018,60 @@ def generate_xls_batch(request, id):
         ws.cell(row=row_num, column=6).value = row_data[5]
         ws.cell(row=row_num, column=7).value = row_data[6]
         ws.cell(row=row_num, column=8).value = row_data[7]
-        ws.cell(row=row_num, column=9).value = row_data[8]
 
     # Set the response content type for an Excel file
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="Batch File-{system_date}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="Batch File-{system_date}.xls"'
 
     # Save the workbook to the response
     wb.save(response)
 
     return response
+
+
+class FCYExchnageRateView(LoginRequiredMixin, View):
+    template_name = 'core/dashboard/exchangerate.html'
+
+    def get(self, request):
+        currencies = CurrencyTable.objects.exclude(cyc_desc='NPR')
+        list_times = FCYRateMaster.objects.filter(date=system_date)
+        filtered_data = None
+
+        try:
+            last_object = FCYRateMaster.objects.latest('id')
+            filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        except ObjectDoesNotExist:
+            last_object = None
+            alert_message = "No data available in FCYRateMaster"
+            context = {
+                'filtered_data': filtered_data,
+                'list_times': list_times,
+                'last_object': last_object,
+                'alert_message': alert_message
+            }
+
+        context = {
+            'filtered_data': filtered_data,
+            'list_times': list_times,
+            'last_object': last_object,
+            'currencies':currencies
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        date_value = request.POST.get('date')
+        selected_currency = request.POST.get('currency')
+        
+        try:
+            last_object = FCYRateMaster.objects.filter(date=date_value).order_by('-date').first()
+            if last_object is None:
+                return render(request, self.template_name, {'message': "No data found in database!"})
+        except Exception as e:
+            return HttpResponse(f"An error occurred: {e}")
+            
+        filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+        context = {
+            'date_filtered_data': filtered_data,
+        }
+        return render(request, self.template_name, context)

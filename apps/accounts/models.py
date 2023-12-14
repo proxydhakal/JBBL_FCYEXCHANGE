@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
 from simple_history.models import HistoricalRecords
+from import_export import resources
 from simple_history import register
 from django.contrib.sessions.models import Session
 from django.contrib.sessions.backends.db import SessionStore
@@ -59,7 +60,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=254, unique=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
-    client_code = models.CharField(max_length=10, blank=True, null=True, default='-')
+    client_code = models.CharField(max_length=20, blank=True, null=True, default='-')
     branch = models.CharField(max_length=10, blank=True, null=True, default='-')
     profile_image = models.ImageField(default='profile_pics/default.png', upload_to='media/profile_pics')
     is_staff = models.BooleanField(default=False)
@@ -67,7 +68,7 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=50, choices=USER_STATUS, default=ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
-    company = models.CharField(max_length=254,null=True, blank=True)
+    company = models.CharField(max_length=254,null=False, blank=False, default='-')
     phone = models.CharField(max_length=50, null=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True, default='-')
     dob = models.DateField(blank=True, null=True, default='2022-02-02')
@@ -99,4 +100,27 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = "USER ACCOUNT"
         verbose_name_plural = "USER ACCOUNTS"
+        
+        
+class UserDetails(models.Model):
+    BranchCode = models.CharField(max_length=5,blank=False, null=False)
+    BranchName = models.CharField(max_length=255, blank=True, null=True)
+    MainCode = models.CharField(max_length=20, blank=False, null=False)
+    Name = models.CharField(max_length=255, blank=False, null=False)
+    Address = models.CharField(max_length=255, blank=True, null=True, default='-')
+    Pan = models.CharField(max_length=20, blank=True, null=True)
+    Mobile = models.CharField(max_length=20, blank=True, null=True)
+    history = HistoricalRecords()
+    objects = UserAccountManager()
+    
+    def __str__(self):
+        return f"{self.BranchCode}-{self.BranchName}-{self.MainCode}"
+    
+    class Meta:
+        verbose_name = "USER DETAILS"
+        verbose_name_plural = "USER DETAILS"
 
+
+class UserDetailsResource(resources.ModelResource):
+    class Meta:
+        model = UserDetails

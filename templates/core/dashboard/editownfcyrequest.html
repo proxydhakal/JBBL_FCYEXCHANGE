@@ -1,0 +1,138 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <div class="container-xl px-4 mt-5">
+        <!-- Knowledge base article-->
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center">
+                <a class="btn btn-transparent-dark btn-icon" href="{% url "fcyexchangerequest" %}"><i data-feather="arrow-left"></i></a>
+                <div class="ms-3"><h2 class="my-3">Modify Transaction Details</h2></div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <div><strong>Request Id:</strong>
+                                {{ fcyrequest.refrenceid }}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Requested Date:</strong>
+                                {{fcyrequest.date}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Branch Name:</strong>
+                                {{fcyrequest.prefBranchName}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Customer's Name:</strong>
+                                {{fcyrequest.customer_fullname}}</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <div><strong>Email:</strong>
+                                {{fcyrequest.enteredBy}}</div>
+                            </li>
+                            <li class="list-group-item">
+                                <div><strong>Status:</strong>
+                                {% if fcyrequest.status  == 'Requested' or fcyrequest.status  == 'Forwarded' %}
+                                <p class="badge bg-warning text-white rounded-pill">Pending</p>
+                                {% elif fcyrequest.status == 'Rejected' %}
+                                <p class="badge bg-danger text-white rounded-pill">Rejected</p>
+                                {% elif fcyrequest.status == 'Approved' %}
+                                <p class="badge bg-success text-white rounded-pill">Approved</p>
+                                {% else %}
+                                
+                                {% endif %}
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <form  method="POST" action="{% url 'fcyexchangeeditown' fcyrequest.id %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-lg-12 mt-4">
+                            <!-- Area chart example-->
+                            <div class="card mb-4">
+                                <div class="card-header text-center">Denomination Details</div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive table-billing-history">
+                                        <table class="table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Currency</th>
+                                                    <th>Deno</th>
+                                                    <th>Unit</th>
+                                                    <th>Rate</th>
+                                                    <th>Equivalent NPR</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for fcy in fcydenodetails %}
+                                                    <tr id="{{fcy.id}}">
+                                                        <td id="currency-{{fcy.id}}">{{fcy.currency}}</td>
+                                                        <td id ="deno-{{fcy.id}}">{{fcy.deno}}</td>
+                                                        <td id ="unit-{{fcy.id}}">{{fcy.unit}}</td>
+                                                        <td id="rate-{{fcy.id}}">{{fcy.rate}}</td>
+                                                        <td id="equivalentNPR-{{fcy.id}}">{{fcy.equivalentNPR}}</td>
+                                                        <td><button class="btn-sm btn-primary editButton"><i class="fas fa-edit"></i></button></td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-lg-8">
+                            <label class="form-label">Total Equivalent NPR in Words<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPRToWords.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPRToWords" name="totalEquivalentNPRToWords" value="{{ fcyrequest.totalEquivalentNPRToWords }}" readonly />
+                            {% if form.totalEquivalentNPRToWords.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPRToWords.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-1"></div>
+                        <div class="col-lg-3">
+                            <label class="form-label">Total Equivalent NPR<b class="text-danger"> *</b></label>
+                            <input class="form-control {% if form.totalEquivalentNPR.errors %}is-invalid{% endif %}" type="text" min="0" id="totalEquivalentNPR" name="totalEquivalentNPR" value="{{ fcyrequest.totalEquivalentNPR }}"  readonly/>
+                            {% if form.totalEquivalentNPR.errors %}
+                                <span class="text-danger">
+                                    {% for error in form.totalEquivalentNPR.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                       
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Action<b class="text-danger"> *</b></label>
+                            <select name="action"class="form-control mb-3" aria-label=".form-select-lg example" required>
+                                <option value="Forward" selected>Forward</option>
+                              </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready((function(){function t(t){var e=parseFloat(t.find("td:eq(3)").text()),a=parseFloat(t.find("td:eq(2)").text()),n=parseFloat(t.find("td:eq(1)").text());if(isNaN(e)||isNaN(a)||isNaN(n))return NaN;var o=e*a*n;return t.find("td:eq(4)").text(o.toFixed(2)),o}function e(){var e=0;$("tbody tr").each((function(){var a=t($(this));isNaN(a)||(e+=a)})),$("#totalEquivalentNPR").val(e.toFixed(2))}function a(t){var e=null;if(document.cookie&&""!==document.cookie)for(var a=document.cookie.split(";"),n=0;n<a.length;n++){var o=a[n].trim();if(o.substring(0,t.length+1)===t+"="){e=decodeURIComponent(o.substring(t.length+1));break}}return e}$("tbody").on("click",".editButton",(function(t){t.preventDefault();var e=$(this).closest("tr"),a=[2,1];e.find("td:not(:last-child)").each((function(t){if(-1!==a.indexOf(t)){var e=$(this).text();$(this).html("<input class='form-controls' type='text' name='"+function(t){switch(t){case 1:return"deno";case 2:return"unit";case 3:return"rate";default:return""}}(t)+"' value='"+e+"'>")}})),e.find(".editButton").addClass("saveButton").removeClass("editButton").html('<i class="fas fa-save"></i>')})),$("tbody").on("click",".saveButton",(function(n){n.preventDefault(),(o=$(this).closest("tr")).find("input").each((function(){var t=$(this).val();$(this).parent("td").text(t)})),o.find(".saveButton").addClass("editButton").removeClass("saveButton").html('<i class="fas fa-edit"></i>'),t(o),e();var o,r=$("#totalEquivalentNPR").val(),i=(o=$(this).closest("tr")).attr("id"),s=$("#deno-"+i).text(),u=$("#unit-"+i).text(),d=$("#rate-"+i).text();if(""===s||"0"===s||""===u||"0"===u||""===d||"0"===d)alert("Error: Fields cannot be empty or zero.");else{var l=$("#equivalentNPR-"+i).text();if(""!==r.trim()){var c=a("csrftoken");$.ajax({method:"POST",url:"/convert_to_words/",data:{totalEquivalentNPR:r},dataType:"json",headers:{"X-CSRFToken":c},success:function(t){var e=t.totalEquivalentNPRToWords||"N/A";$("#totalEquivalentNPRToWords").val(e);var n={deno:s,unit:u,rate:d,equivalentNPR:l,totalEquivalentNPRToWords:e,totalEquivalentNPR:r},o=a("csrftoken");$.ajax({method:"POST",url:"/update_fcy_data/"+i+"/{{ fcyrequest.id }}/",data:n,dataType:"json",headers:{"X-CSRFToken":o},success:function(t){toastr.success("Data updated successfully")},error:function(t){toastr.error("Error updating data")},complete:function(t,e){"error"!==e&&window.location.reload()}})}})}else $("#totalEquivalentNPRToWords").val("")}})),$("tbody").on("input","td:lt(4)",(function(){t($(this).closest("tr")),e()}))}));
+</script>
+{% endblock main %}

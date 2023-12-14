@@ -24,12 +24,13 @@
         <link rel="stylesheet" href="{% static 'css/select2.min.css' %}">
         <script src="{% static 'js/jquery-3.6.0.min.js' %}" ></script>
         <script src="{% static 'js/flatpickr.js' %}" ></script>
+        
 
     </head>
     <body class="nav-fixed">
         <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
             <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle"><i data-feather="menu"></i></button>
-            <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="{% url 'home' %}"><img class="img-fluid w-100 h-25" src="{% static 'images/logo.png' %}" alt="Logo"></a>
+            <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="{% url 'home' %}"><img class="img-fluid w-100 h-25" src="{% static 'images/fcylogo.png' %}" alt="Logo"></a>
             <form class="form-inline me-auto d-none d-lg-block me-3">
                 <div class="input-group input-group-joined input-group-solid">
                     <input class="form-control pe-0" type="search" placeholder="Search" aria-label="Search" />
@@ -100,7 +101,7 @@
                             <div class="collapse" id="collapseDashboards" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
                                     <a class="nav-link" href="{% url "home" %}">Dashboard</a>
-                                    <a class="nav-link" href="dashboard-2.html">Exchange Rates</a>
+                                    <a class="nav-link" href="{% url "fcyexchangerateview" %}">Exchange Rates</a>
                                     <a class="nav-link" href="{% url "branches" %}">
                                        FCY Exchange Branches
                                     </a>
@@ -114,11 +115,15 @@
                             </a>
                             <div class="collapse" id="collapseDashboards1" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
+                                    {% if request.user.is_superuser or request.user.role == 1 %}
                                     <a class="nav-link" href="{% url 'createfcyexchange' %}">
                                        Create New Request
                                     </a>
+                                    {% endif %}
                                     <a class="nav-link" href="{% url "fcyexchangerequest" %}">My Request List</a>
+                                    {% if request.user.is_superuser %}
                                     <a class="nav-link" href="{% url "fcyexchangerate" %}">Upload Exchange Rate</a>
+                                    {% endif %}
                                 </nav>
                             </div>
                             {% comment %} END FCY EXCHANGE MENU {% endcomment %}

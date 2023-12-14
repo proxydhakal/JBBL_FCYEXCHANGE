@@ -65,21 +65,18 @@
                                 <div class="row gx-3 mb-3">
                                     <!-- Form Group (first name)-->
                                     <div class="col-md-6">
-                                        <label class="small mb-1" for="inputUsername">Username (Client Code)</label>
+                                        <label class="small mb-1" for="inputUsername">Username (Account Number)</label>
                                         <input class="form-control" id="inputUsername" name="client_code" type="text" placeholder="Enter your username" value="{{userprofiledata.client_code}}" />
                                     </div>
                                     <!-- Form Group (last name)-->
                                     <div class="col-md-6">
                                         <label class="small mb-1" for="inputUsername">Branch</label>
-                                        <select class="form-select form-control md" id="form-selects" name="branch" aria-label="Branch">
-                                            <option selected disabled>Select Prefered Branch</option>
+                                        <select class="form-select form-control md" id="inputBranch" name="branch" aria-label="Branch">
+                                            <option selected disabled>Select Preferred Branch</option>
                                             {% for branch in branches %}
-                                            <option value="{{branch.BranchCode}}" {% if branch.BranchCode == userprofiledata.branch %}
-                                            selected
-                                        {% endif %}>{{branch.BranchName}}</option>
+                                                <option value="{{ branch.BranchCode }}">{{ branch.BranchName }}</option>
                                             {% endfor %}
                                         </select>
-                    
                                     </div>
                                 </div>
                                 <!-- Form Row        -->
@@ -164,6 +161,58 @@
             }
         });
     });
+</script>
+<script>
+    $(document).ready(function() {
+        $('#inputUsername').on('change', function() {
+            var username = $(this).val(); 
+    
+            $.ajax({
+                url: '/account/profiledetails/', 
+                method: 'POST', 
+                data: {
+                    username: username 
+                },
+                success: function(data) {
+                    if(data != null){
+                        $('#inputOrgName').val(data.Name);
+                        $('#inputLocation').val(data.Address);
+                        $('#inputPhone').val(data.Mobile);
+                        if (data && data.BranchCode) {
+                            var selectedBranchCode = data.BranchCode;
+                    
+                            // Loop through each option in the select
+                            $('#inputBranch option').each(function() {
+                                var branchCode = $(this).val();
+                    
+                                // Compare 'data.BranchCode' with each option's value
+                                if (selectedBranchCode === branchCode) {
+                                    // Set the 'selected' attribute for the matching option
+                                    $(this).prop('selected', true);
+                                }
+                            });
+                        }
+                    }else{
+                        console.log('No data Found');
+                    }                    
+                },
+                error: function(xhr, status, error) {
+                    
+                    toastr.error('Invalid Request, No data Found: ' + error);
+                }
+            });
+        });
+    });
+    $(document).ready(function() {
+        // Assuming you have the 'data' object available containing submittedBranch
+        var submittedBranch = '{{ userprofiledata.branch }}'; // Assuming userprofiledata.branch contains the submitted branch value
+    
+        // Check if the submittedBranch value is not empty
+        if (submittedBranch) {
+            // Set the value of the select dropdown to the submittedBranch
+            $('#inputBranch').val(submittedBranch);
+        }
+    });        
 </script>
 {% endblock main %}
 

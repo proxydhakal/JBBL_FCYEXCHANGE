@@ -10,10 +10,11 @@ class FCYExchangeRateUploadForm(forms.Form):
 
 class FCYExchangeRequestMasterForm(forms.ModelForm):
     preferredBranch = forms.ModelChoiceField(
-        queryset=Branches.objects.all(),
+        queryset=Branches.objects.filter(Status='T'),
         to_field_name='BranchCode',
         required=True,
         empty_label='Select Branch',
+        widget=forms.Select(attrs={'class': 'SelectBranch'}),
     )
 
     class Meta:
@@ -27,7 +28,8 @@ class FCYExchangeRequestMasterForm(forms.ModelForm):
         
         for field_name, field in self.fields.items():
             field.required = True
-            field.widget.attrs['class'] = 'form-control'
+            field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' form-control'
+
 
     def get_branch_choices(self):
         choices = [(branch.BranchCode, branch.BranchName) for branch in Branches.objects.all()]
@@ -35,7 +37,7 @@ class FCYExchangeRequestMasterForm(forms.ModelForm):
 
 
 class FCYDenoMasterTableForm(forms.ModelForm):
-    currency = forms.ModelChoiceField(queryset=CurrencyTable.objects.all(), to_field_name='cyc_desc', required=True)
+    currency = forms.ModelChoiceField(queryset=CurrencyTable.objects.exclude(cyc_desc='NPR'), to_field_name='cyc_desc', required=True)
     
     class Meta:
         model = FCYDenoMasterTable

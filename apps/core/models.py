@@ -24,10 +24,10 @@ class FCYExchangeRate(models.Model):
     currency_code = models.CharField(max_length=10)
     currency = models.CharField(max_length=255)
     currency_unit = models.CharField(max_length=50)
-    buying_rate_deno_50_or_less = models.DecimalField(max_digits=10, decimal_places=2)
-    buying_rate_deno_50_or_above = models.DecimalField(max_digits=10, decimal_places=2)
-    selling_rate = models.DecimalField(max_digits=10, decimal_places=2)
-    premium_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    buying_rate_deno_50_or_less = models.DecimalField(max_digits=10, decimal_places=4)
+    buying_rate_deno_50_or_above = models.DecimalField(max_digits=10, decimal_places=4)
+    selling_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    premium_rate = models.DecimalField(max_digits=10, decimal_places=4)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -106,7 +106,7 @@ class FCYDenoMasterTable(models.Model):
     currency        = models.CharField(max_length=255)  
     deno            = models.IntegerField()
     unit            = models.IntegerField()
-    rate            = models.DecimalField(max_digits=20, decimal_places=2)
+    rate            = models.DecimalField(max_digits=20, decimal_places=4)
     equivalentNPR   = models.DecimalField(max_digits=20, decimal_places=2)  
     status          = models.CharField(max_length=50)  
     enteredBy       = models.CharField(max_length=255)  

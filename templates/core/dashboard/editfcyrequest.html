@@ -39,7 +39,7 @@
                             </li>
                             <li class="list-group-item">
                                 <div><strong>Status:</strong>
-                                {% if fcyrequest.status  == 'Requested'  %}
+                                {% if fcyrequest.status  == 'Requested' or fcyrequest.status  == 'Forwarded'  %}
                                 <p class="badge bg-warning text-white rounded-pill">Pending</p>
                                 {% elif fcyrequest.status == 'Rejected' %}
                                 <p class="badge bg-danger text-white rounded-pill">Rejected</p>
@@ -129,7 +129,7 @@
                                 </span>
                             {% endif %}
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" id="depositdiv">
                             <label class="form-label">Deposited By<b class="text-danger"> *</b></label>
                             {{form.depositedby}}
                             {% if form.depositedby.errors %}
@@ -161,14 +161,14 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-        $('#remarksdiv').hide();
-
-        $('#action').change(function () {
+        $('#id_action').change(function () {
             var selectedAction = $(this).val();
-            if (selectedAction === 'Approved' || selectedAction === 'Rejected') {
-                $('#remarksdiv').show();
+            if (selectedAction === 'APPROVED') {
+                $('#depositdiv').show();
+                $('#id_depositedby').prop('required', true);
             } else {
-                $('#remarksdiv').hide();
+                $('#depositdiv').hide();
+                $('#id_depositedby').prop('required', false).val('-');
             }
         });
     });

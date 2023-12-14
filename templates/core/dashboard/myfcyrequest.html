@@ -36,28 +36,40 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for request in fcyrequest %}
+                            {% for fcy in fcyrequest %}
                             <tr>
-                                <td>{{ request.date }}</td>
-                                <td><a href="{% url "fcyexchangedetail" request.id %}">{{ request.refrenceid }}</a></td>
-                                <td>{{ request.prefBranchName }}</td>
-                                <td>{{ request.customer_fullname }}</td>
-                                <td>{{ request.totalEquivalentNPR }}</td>
-                                {% if request.status == 'Requested' %}
+                                <td>{{ fcy.date }}</td>
+                                <td><a href="{% url "fcyexchangedetail" fcy.id %}">{{ fcy.refrenceid }}</a></td>
+                                <td>{{ fcy.prefBranchName }}</td>
+                                <td>{{ fcy.customer_fullname }}</td>
+                                <td>{{ fcy.totalEquivalentNPR }}</td>
+                                {% if fcy.status == 'Requested' or fcy.status == 'Forwarded' %}
                                     <td><p class="badge bg-warning text-white rounded-pill">Pending</p></td>
-                                {% elif request.status == 'Rejected' %}
+                                {% elif fcy.status == 'Rejected' %}
                                     <td><p class="badge bg-danger text-white rounded-pill">Rejected</p></td>
-                                {% elif request.status == 'Approved' %}
+                                {% elif fcy.status == 'Approved' %}
                                     <td><p class="badge bg-success text-white rounded-pill">Approved</p></td>
                                 {% else %}
                                     <td></td>
                                 {% endif %}
                                 <td>
-                                    {% if request.status == 'Approved' or request.status == 'Rejected' %}
+                                    {% if fcy.status == 'Approved' or fcy.status == 'Rejected' %}
+
                                     {% else %}
-                                    <a href="{% url "fcyexchangeedit" request.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                        {% if fcy.status == 'Requested' or fcy.status == 'Forwarded' %}
+                                            {% if request.user.role == 2 %}
+                                                <a href="{% url "fcyexchangeedit" fcy.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                            {% elif request.user.role == 1 %}
+                                                {% if fcy.status != 'Forwarded' %}
+                                                    <a href="{% url "fcyexchangeeditown" fcy.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{% url "fcyexchangeedit" fcy.id %}" class="btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                                <a href="{% url "fcyexchangeeditown" fcy.id %}" class="btn-sm btn-success"><i class="fas fa-edit"></i></a>
+                                            {% endif %}
+                                        {% endif %}
                                     {% endif %}
-                                    <a href="{% url "fcyexchangedetail"  request.id %}" class="btn-sm btn-secondary"><i class="far fa-eye"></i></a>
+                                    <a href="{% url "fcyexchangedetail"  fcy.id %}" class="btn-sm btn-secondary"><i class="far fa-eye"></i></a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -82,7 +94,8 @@
                 fixedColumns: {
                     left: 2,
                     right: 1
-                }
+                },
+                order: [[1, 'desc']]
             });
         });        
     })();

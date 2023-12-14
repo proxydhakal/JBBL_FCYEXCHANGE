@@ -227,11 +227,62 @@
     </div>
 </main>
 <script>
+    $(document).on('change', 'input[id$="-deno"]', function() {
+        var parentRow = $(this).closest('.row');
+    
+        var denoInput = parentRow.find('input[id$="-deno"]');
+        var currencySelect = parentRow.find('select[name$="-currency"]');
+        var currencyDenominations = {
+            'USD': [1, 2, 5, 10, 20, 50, 100],
+            'EUR': [20, 5, 10, 50, 100, 200],
+            'GBP': [20, 5, 10,50],
+            'AUD': [1,2,100,20, 5, 10,50],
+            'CHF': [100,20, 10,50,200],
+            'CAD':[5,10,20,50,100],
+            'SGD':[2,5,10,20,25,50,100,200],
+            'CNY':[1,2,5,10,20,50,100],
+            'SAR':[1,5,10,20,50,100,200,500],
+            'QAR':[1,5,10,50,100,500],
+            'THB':[20,50,100,500],
+            'AED':[5,10,20,50,100,200,500],
+            'MYR':[1,5,10,20,50,100],
+            'SEK':[20,50,100,200,500],
+            'DKK':[10,20,50,100,200],
+            'HKD':[10,20,50,100,500],
+            'INR':[100],
+            'KRW':[500,1000, 10000,50000],
+            'JPY':[1000],
+            'KWD':[0.25,0.5,1,5,10,20],
+            'BHD':[0.5,1,5,10,20,100], 
+        };
+
+        var denoValue = denoInput.val();
+        var selectedCurrency = currencySelect.val();
+
+        if (selectedCurrency && currencyDenominations[selectedCurrency]) {
+
+            var denominations = currencyDenominations[selectedCurrency];
+            if (denominations.includes(parseInt(denoValue))) {
+                console.log('Deno value exists for ' + selectedCurrency);
+ 
+            } else {
+                alert('Invalid or Non-existing Deno value for ' + selectedCurrency);
+                denoInput.val(''); 
+            }
+        } else {
+            console.log('Invalid currency selection or denominations not found');
+
+        }
+
+    });    
+</script>
+<script>
 $(document).ready(function(){
     function updateRate(parentRow) {
         var denoInput = parentRow.find('input[id$="-deno"]');
         var currencySelect = parentRow.find('select[name$="-currency"]');
         var rateInput = parentRow.find('input[id$="-rate"]');
+        var unitInput = parentRow.find('input[id$="-unit"]'); // Assuming the unit field ID ends with '-unit'
         var csrftoken = getCookie('csrftoken');
     
         var denoValue = denoInput.val();
@@ -242,7 +293,8 @@ $(document).ready(function(){
                 method: 'POST',
                 url: '/getdenorate/', 
                 data: {
-                    'denoValue': denoValue, 'selectedCurrency': selectedCurrency
+                    'denoValue': denoValue,
+                    'selectedCurrency': selectedCurrency
                 },
                 dataType: 'json',
                 headers: {
@@ -251,10 +303,14 @@ $(document).ready(function(){
                 success: function(data) {
                     var rate = data.rate || 'N/A';
                     rateInput.val(rate);
+    
+                    // Clear the unit field
+                    unitInput.val('');
                 }
             });
         } else {
             rateInput.val('');
+            unitInput.val('');
         }
     }
     
@@ -262,6 +318,7 @@ $(document).ready(function(){
         var parentRow = $(this).closest('.row');
         updateRate(parentRow);
     });
+    
     
 });
 function getCookie(name) {
@@ -322,7 +379,7 @@ function getCookie(name) {
 </script>
 <script type="text/javascript">
     $(document).ready(function() {
-        $('body').on('input change', 'input[name*=rate], input[name*=deno], input[name*=unit], select[name*=currency]', function() {
+        $('body').on('input change', 'input[name*=rate], input[name*=deno], input[name*=unit]', function() {
             var currentField = $(this);
             var currentForm = currentField.closest('.bird-form');
             var rate = parseFloat(currentForm.find('input[name*="rate"]').val()) || 0;
@@ -486,6 +543,6 @@ function getCookie(name) {
     /*.table .sign-address {
     	justify-content: space-between;
     }*/
-	/*foreign-exchange-section-ended*/
+
 </style>
 {% endblock main %}

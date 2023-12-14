@@ -1,0 +1,111 @@
+{% extends "core/dashboard/base.html" %} 
+{% load static %}
+{% block main %}
+<main>
+    <header class="page-header page-header-dark bg-gradient-primary-to-secondary mb-4">
+        <div class="container-xl px-4">
+            <div class="page-header-content pt-4">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-auto mt-4">
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="file"></i></div>
+                            Exchange Rates
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main page content-->
+    <div class="container-xl px-4">
+        <div class="card">
+            <div class="card-header text-center">For</div>
+            <div class="card-body">
+                <form class="row g-3" method="POST" url="{% url "fcyexchangerateview" %}" >
+                    {% csrf_token %}
+                    <div class="col-3">
+                        <label>Date<b class="text-danger"> *</b></label>
+                        <input class="form-control" name ="date" id="postTitleInput" type="text" placeholder="Select Date" value="{{last_object.date|date:"Y-m-d"}}" />
+                    </div>
+                    {% comment %} <div class="col-3">
+                        <label>Currency<b class="text-danger"> *</b></label>
+                        <select name="currency" id="currency" class="form-control {% if form.currency.errors %}is-invalid{% endif %}">
+                            <option value="ALL" selected>All</option>
+                            {% for currency in currencies %}
+                            <option value="{{currency.cyc_desc}}">{{currency.cyc_desc}}</option>
+                        {% endfor %}
+                        </select>
+                    </div> {% endcomment %}
+                    <div class="col-auto mt-5">
+                      <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% if date_filtered_data %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card mb-4 mt-3">
+                        <div class="card-body p-0">
+                            <div class="table-responsive table-billing-history p-3">
+                                <table class="table mb-0" id="datatablesSimple1">
+                                    <thead>
+                                        <tr>
+                                            <th>Currency</th>
+                                            <th>Unit</th>
+                                            <th>Buy (cash)</th>
+                                            <th>Buy (Non-cash)</th>
+                                            <th>Sell</th>
+                                            <th>Premium Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for data in date_filtered_data %}
+                                            <tr>
+                                                <td>{{data.currency}}</td>
+                                                <td>{{data.currency_unit}}</td>
+                                                <td>{{data.buying_rate_deno_50_or_less}}</td>
+                                                <td>{{data.buying_rate_deno_50_or_above}}</td>
+                                                <td>{{data.selling_rate}}</td>
+                                                <td>{{data.premium_rate}}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="row">
+                <p>{{message}}</p>
+            </div> 
+        {% endif %}
+    </div>
+</main>
+<script>
+    flatpickr("#postTitleInput", {
+        dateFormat: "Y-m-d",
+        maxDate: "today" // Disable future dates
+    });
+</script>
+<script type="text/javascript">
+    (function () {
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple1').DataTable({
+                paging: true,
+                scrollY: '260px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });        
+        $(document).ready(function() {
+            var dataTable = $('#datatablesSimple2').DataTable({
+                paging: true,
+                scrollY: '300px', // Set the height for vertical scrolling
+                scrollCollapse: true
+            });
+        });    
+    })();
+</script>
+{% endblock main %}

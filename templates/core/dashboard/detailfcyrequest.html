@@ -47,22 +47,24 @@
                                 </div>
                             </li>
                             {% if fcyrequest.status  == 'Approved'  %}
-                            <li class="list-group-item">
-                                <div>
-                                    <a href="{% url "getreceipt" fcyrequest.id %}" class="btn-sm btn-primary" title="Print Receipt">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" fill="currentColor" class="bi bi-printer-fill" viewBox="0 0 16 16">
-                                            <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"/>
-                                            <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
-                                        </svg>
-                                    </a>
-                                    &nbsp;&nbsp;&nbsp;
-                                    <a href="{% url "batchdump" fcyrequest.id %}" class="btn-sm btn-success" title="Download Batch File">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" fill="currentColor" class="bi bi-file-earmark-excel-fill" viewBox="0 0 16 16">
-                                            <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M5.884 6.68 8 9.219l2.116-2.54a.5.5 0 1 1 .768.641L8.651 10l2.233 2.68a.5.5 0 0 1-.768.64L8 10.781l-2.116 2.54a.5.5 0 0 1-.768-.641L7.349 10 5.116 7.32a.5.5 0 1 1 .768-.64z"/>
-                                          </svg>
-                                    </a>
-                                </div>
-                            </li>
+                                {% if request.user.role == 0 or request.user.role == 2 %}
+                                    <li class="list-group-item">
+                                        <div>
+                                            <a href="{% url "getreceipt" fcyrequest.id %}" class="btn-sm btn-primary" title="Print Receipt">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" fill="currentColor" class="bi bi-printer-fill" viewBox="0 0 16 16">
+                                                    <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"/>
+                                                    <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                                                </svg>
+                                            </a>
+                                            &nbsp;&nbsp;&nbsp;
+                                            <a href="{% url "batchdump" fcyrequest.id %}" class="btn-sm btn-success" title="Download Batch File">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" fill="currentColor" class="bi bi-file-earmark-excel-fill" viewBox="0 0 16 16">
+                                                    <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M5.884 6.68 8 9.219l2.116-2.54a.5.5 0 1 1 .768.641L8.651 10l2.233 2.68a.5.5 0 0 1-.768.64L8 10.781l-2.116 2.54a.5.5 0 0 1-.768-.641L7.349 10 5.116 7.32a.5.5 0 1 1 .768-.64z"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </li>
+                                {% endif %}
                             {% endif %}
                         </ul>
                     </div>
@@ -74,7 +76,7 @@
                             </li>
                             <li class="list-group-item">
                                 <div><strong>Status:</strong>
-                                {% if fcyrequest.status  == 'Requested'  %}
+                                    {% if fcyrequest.status  == 'Requested' or fcyrequest.status  == 'Forwarded'  %}
                                 <p class="badge bg-warning text-white rounded-pill">Pending</p>
                                 {% elif fcyrequest.status == 'Rejected' %}
                                 <p class="badge bg-danger text-white rounded-pill">Rejected</p>

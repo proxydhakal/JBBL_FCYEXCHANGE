@@ -15,8 +15,14 @@
                 </div>
             </div>
             <!-- Date range picker example-->
-            <div class="border-0 shadow" style="width: 8rem">
+            <div class="border-0 shadow" style="width: 9rem">
+                {% if request.user.role == 1 %}
+                    <span class="input-group-text"><i data-feather="plus"></i><a class="ps-0 pointer" href="{% url 'createfcyexchange' %}">New Request</a></span>
+                {% elif request.user.role == 2 %}
+                    <span class="input-group-text"><i data-feather="plus"></i><a class="ps-0 pointer" href="{% url 'fcyexchangerequest' %}">My Request List</a></span>
+                {% else %}
                 <span class="input-group-text"><i data-feather="plus"></i><a class="ps-0 pointer" href="{% url 'createfcyexchange' %}">New Request</a></span>
+                {% endif %}
             </div>
         </div>
         <div class="row">

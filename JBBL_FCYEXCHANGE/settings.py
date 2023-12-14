@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE',cast=int)
-TIME_ZONE = 'Asia/Kathmandu'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -194,13 +194,14 @@ LOGIN_REDIRECT_URL= '/dashboard/'
 LOGIN_URL ='/accounts/login'
 
 #Email configuration 
-EMAIL_USE_TLS = config("EMAIL_USE_TLS")
-# EMAIL_USE_SSL = config("EMAIL_USE_SSL")
+# EMAIL_USE_TLS = config("EMAIL_USE_TLS")
+EMAIL_USE_SSL = config("EMAIL_USE_SSL")
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT =config("EMAIL_PORT")
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
