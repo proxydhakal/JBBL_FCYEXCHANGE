@@ -62,6 +62,8 @@
                                                     <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M5.884 6.68 8 9.219l2.116-2.54a.5.5 0 1 1 .768.641L8.651 10l2.233 2.68a.5.5 0 0 1-.768.64L8 10.781l-2.116 2.54a.5.5 0 0 1-.768-.641L7.349 10 5.116 7.32a.5.5 0 1 1 .768-.64z"/>
                                                 </svg>
                                             </a>
+                                            &nbsp;&nbsp;&nbsp;
+                                            <button  width="30" height="20" class="btn-sm btn-secondary" onclick="printSection('sectionToPrint')">Print Section</button>
                                         </div>
                                     </li>
                                 {% endif %}
@@ -154,6 +156,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
                 <div class="row mb-4">
                     <div class="col-lg-8">
@@ -183,7 +186,180 @@
             </div>
         </div>
     </div>
+    <div class="col-lg-12 mt-4" id="sectionToPrint">
+        <section class="foreign-exchange-encashment my-5 pb-5"  style="display:block;">
+            <page size="A4">
+                <div class="container">
+                    <div class="container px-5">
+                        <div class="row pt-5">
+                            <div class="col-md-12 text-center">
+                                <a class="navbar-brand" href="jbbl.com.np">
+                                    <img class="logo" src="https://apps.jbbl.com.np/Assets/img/Adminlogo.png" alt="Logo">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="small-line" style=" width: 100%; height: 3px; background: #000000; margin: 20px 0px;"></div>
+                    <div class="container px-5">
+                        <div class="row">
+                            <div class="col-md-12 text-center">
+                                <h4>FOREIGN EXCHANGE ENCASHMENT RECEIPT</h4>
+                            </div>
+                            <div class="col-md-12 p-0">
+                                <p class="m-0">Receipt No: </p>
+                                <p>Date: </p>
+                            </div>
+                            <p class="p-0">We hereby certify that we have purchased today foreign currency as mentioned below from </p>
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Currency</th>
+                                        <th class="text-center">Deno Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for currency, details in data_by_currency.items %}
+                                        <tr>
+                                            <td>{{ currency }}</td>
+                                            <td>
+                                                <table class="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th></th>
+                                                            <th>Deno</th>
+                                                            <th>Unit</th>
+                                                            <th>Rate</th>
+                                                            <th>Equivalent NPR</th>
+                                                    
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for detail in details %}
+                                                            <tr>
+                                                                <td></td>
+                                                                <td>{{ detail.deno }}</td>
+                                                                <td>{{ detail.unit }}</td>
+                                                                <td>{{ detail.rate }}</td>
+                                                                <td>{{ detail.equivalent_npr }}</td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>                                   
+                            <h5 class="text-end">Total Equivalent NPR: 17360470.00</h5>
+                            <p class="p-0">NPR Amount in Words:  Only/-</p><br>
+                            <p class="p-0">Customer's Signature:_______________________________</p><br><br><br>
+
+                            <p class="p-0">Signature & Stamp of the Bank</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <footer class="footer bg-white" style="padding: 1.3rem 0; flex-shrink: 0; right: 0; left: 0; bottom: 0; box-shadow: 0px 1px 8px #888888; position: absolute;">
+                    <div class="container my-auto">
+                        <div class="copyright my-auto" style="font-size: 17px; text-align: center;">
+                            <span>*** This document is electronically generated and does not require digital signature.***</span>
+                        </div>
+                    </div>
+                </footer>
+            </page>
+        </section>
+    </div>
 </main>
+<style>@page { size: A4 landscape2}</style>
+<style type="text/css">
+    /*foreign-exchange-encashment-section-started*/
+    page[size="A4"] {  
+      width: 21cm;
+      height: 29.7cm; 
+    }
+
+    @page {
+        size: A4 landscape;
+        margin: 0;
+    }
+
+    page {
+    	position: relative;
+	    background: white;
+	    display: block;
+	    margin: 0 auto;
+	    margin-bottom: 0.5cm;
+	    box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
+	}
+
+    .table>:not(caption)>*>* {
+        padding: 0.5rem 0.5rem;
+        background-color: var(--bs-table-bg);
+        border-bottom-width: 0px;
+        box-shadow: inset 0 0 0 9999px var(--bs-table-accent-bg);
+    }
+
+    .foreign-exchange-encashment .info {
+        justify-content: space-between;
+    }
+
+    .foreign-exchange-encashment h4 {
+        color: #21ABE3;
+    }
+
+
+    /*foreign-exchange-encashment-section-ended*/
+</style>
+<style>
+    /* Common styles */
+    @media print {
+        /* Your existing styles */
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        page[size="A4"] {  
+            width: 21cm;
+            height: 29.7cm; 
+        }
+
+        page {
+            position: relative;
+            background: white;
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 0.5cm;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+        }
+
+        .table>:not(caption)>*>* {
+            padding: 0.5rem 0.5rem;
+            background-color: var(--bs-table-bg);
+            border-bottom-width: 0px;
+            box-shadow: inset 0 0 0 9999px var(--bs-table-accent-bg);
+        }
+
+        .foreign-exchange-encashment .info {
+            justify-content: space-between;
+        }
+
+        .foreign-exchange-encashment h4 {
+            color: #21ABE3;
+        }
+
+        .foreign-exchange-encashment .table thead {
+            background-color: #d2a12a;
+            color: #21ABE3;
+        }
+
+        .foreign-exchange-encashment .table tbody {
+            background-color: #f9e6bb;
+        }
+
+        /* Additional print-specific styles if needed */
+    }
+</style>
 <script>
     $(document).ready(function() {
         $('.table.mb-0 table.mb-0').each(function() {
@@ -208,5 +384,17 @@
             $(this).find('tbody').append(subtotalRow);
         });
     });    
+</script>
+<script>
+    function printSection(sectionId) {
+        var printContent = document.getElementById(sectionId);
+        var originalContent = document.body.innerHTML;
+      
+        document.body.innerHTML = printContent.innerHTML;
+        window.print();
+        
+        // Restore the original content after printing
+        document.body.innerHTML = originalContent;
+      }      
 </script>
 {% endblock main %}
