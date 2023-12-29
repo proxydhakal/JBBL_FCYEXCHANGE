@@ -2,7 +2,7 @@
 {% load static %}
 {% block main %}
 <main>
-    <div class="container-xl px-4 mt-5">
+    <div class="container-xl px-5 mt-5">
         <!-- Knowledge base article-->
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center">
@@ -106,7 +106,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-lg-12 mt-4">
+                    <div class="col-lg-12 mt-4 p-3">
                         <!-- Area chart example-->
                         <div class="card mb-4">
                             <div class="card-header text-center">Denomination Detail's</div>
@@ -186,80 +186,78 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-12 mt-4" id="sectionToPrint">
-        <section class="foreign-exchange-encashment my-5 pb-5"  style="display:block;">
+    <div class="container-xl px-4 mt-5">
+        <section class="foreign-exchange-encashment my-5 pb-5" id="sectionToPrint"  style="display:none;">
             <page size="A4">
-                <div class="container">
-                    <div class="container px-5">
-                        <div class="row pt-5">
-                            <div class="col-md-12 text-center">
-                                <a class="navbar-brand" href="jbbl.com.np">
-                                    <img class="logo" src="https://apps.jbbl.com.np/Assets/img/Adminlogo.png" alt="Logo">
-                                </a>
-                            </div>
+                <div class="px-5">
+                    <div class="row pt-5">
+                        <div class="col-md-12 text-center">
+                            <a class="navbar-brand" href="jbbl.com.np">
+                                <img class="logo" src="https://apps.jbbl.com.np/Assets/img/Adminlogo.png" alt="Logo">
+                            </a>
                         </div>
                     </div>
                     <div class="small-line" style=" width: 100%; height: 3px; background: #000000; margin: 20px 0px;"></div>
-                    <div class="container px-5">
-                        <div class="row">
-                            <div class="col-md-12 text-center">
-                                <h4>FOREIGN EXCHANGE ENCASHMENT RECEIPT</h4>
-                            </div>
-                            <div class="col-md-12 p-0">
-                                <p class="m-0">Receipt No: </p>
-                                <p>Date: </p>
-                            </div>
-                            <p class="p-0">We hereby certify that we have purchased today foreign currency as mentioned below from </p>
-                            <table class="table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Currency</th>
-                                        <th class="text-center">Deno Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for currency, details in data_by_currency.items %}
-                                        <tr>
-                                            <td>{{ currency }}</td>
-                                            <td>
-                                                <table class="table mb-0">
-                                                    <thead>
-                                                        <tr>
-                                                            <th></th>
-                                                            <th>Deno</th>
-                                                            <th>Unit</th>
-                                                            <th>Rate</th>
-                                                            <th>Equivalent NPR</th>
-                                                    
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for detail in details %}
-                                                            <tr>
-                                                                <td></td>
-                                                                <td>{{ detail.deno }}</td>
-                                                                <td>{{ detail.unit }}</td>
-                                                                <td>{{ detail.rate }}</td>
-                                                                <td>{{ detail.equivalent_npr }}</td>
-                                                            </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>                                   
-                            <h5 class="text-end">Total Equivalent NPR: 17360470.00</h5>
-                            <p class="p-0">NPR Amount in Words:  Only/-</p><br>
-                            <p class="p-0">Customer's Signature:_______________________________</p><br><br><br>
-
-                            <p class="p-0">Signature & Stamp of the Bank</p>
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h4>FOREIGN EXCHANGE ENCASHMENT RECEIPT</h4>
                         </div>
+                        <div class="col-md-12 p-0">
+                            <p class="m-0">Receipt No: {{ fcyrequest.refrenceid }}</p>
+                            <p>Date: {{fcyrequest.date}}</p>
+                            <p>Account Number: {{userdetails.client_code}}</p>
+                        </div>
+                        <p class="p-0">We hereby certify that we have purchased today foreign currency as mentioned below from  {{fcyrequest.customer_fullname}}.</p>
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Currency</th>
+                                    <th class="text-center">Deno Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for currency, details in data_by_currency.items %}
+                                    <tr>
+                                        <td>{{ currency }}</td>
+                                        <td>
+                                            <table class="table mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th></th>
+                                                        <th>Deno</th>
+                                                        <th>Unit</th>
+                                                        <th>Rate</th>
+                                                        <th>Equivalent NPR</th>
+                                                
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for detail in details %}
+                                                        <tr>
+                                                            <td></td>
+                                                            <td>{{ detail.deno }}</td>
+                                                            <td>{{ detail.unit }}</td>
+                                                            <td>{{ detail.rate }}</td>
+                                                            <td>{{ detail.equivalent_npr }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                                                          
+                        <h5 class="text-end"><b>Total Equivalent NPR:</b> {{ fcyrequest.totalEquivalentNPR }}</h5>
+                        <br><br><br><br>
+                        <p class="p-0">NPR Amount in Words: {{ fcyrequest.totalEquivalentNPRToWords }}</p><br><br><br>
+                        <p class="p-0">Customer's Signature:_______________________________</p><br><br><br><br><br><br><br>
+
+                        <p class="p-0">Signature & Stamp of the Bank</p>
                     </div>
                 </div>
-                
-                <footer class="footer bg-white" style="padding: 1.3rem 0; flex-shrink: 0; right: 0; left: 0; bottom: 0; box-shadow: 0px 1px 8px #888888; position: absolute;">
+                <footer class="footer bg-white" style="padding: 1.3rem 0; flex-shrink: 0; right: 0; left: 0; bottom: 0;">
                     <div class="container my-auto">
                         <div class="copyright my-auto" style="font-size: 17px; text-align: center;">
                             <span>*** This document is electronically generated and does not require digital signature.***</span>
@@ -275,7 +273,7 @@
     /*foreign-exchange-encashment-section-started*/
     page[size="A4"] {  
       width: 21cm;
-      height: 29.7cm; 
+      height: auto; 
     }
 
     @page {
@@ -284,11 +282,12 @@
     }
 
     page {
-    	position: relative;
 	    background: white;
 	    display: block;
-	    margin: 0 auto;
-	    margin-bottom: 0.5cm;
+        margin-top: 5.2cm;
+        margin-bottom: 5.5cm;
+        margin-left: 4.5cm; 
+        margin-right: 4.5cm;
 	    box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
 	}
 
@@ -325,11 +324,12 @@
         }
 
         page {
-            position: relative;
             background: white;
             display: block;
-            margin: 0 auto;
-            margin-bottom: 0.5cm;
+            padding-top: 5.2cm;
+            padding-bottom: 5.5cm;
+            padding-left: 4.5cm; 
+            padding-right: 4.5cm;
             box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 

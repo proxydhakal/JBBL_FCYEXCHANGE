@@ -30,17 +30,44 @@
                 <!-- Dashboard info widget 1-->
                 <div class="card border-start-lg border-start-primary h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <div class="small fw-bold text-primary mb-1">Earnings (monthly)</div>
-                                <div class="h5">$4,390</div>
-                                <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
-                                    <i class="me-1" data-feather="trending-up"></i>
-                                    12%
+                        {% if request.user.role == 0 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-primary mb-1">Total Active User (Active)</div>
+                                    <div class="h5">{{total_users}}</div>
+                                    {% comment %} <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-up"></i>
+                                        12%
+                                    </div> {% endcomment %}
                                 </div>
+                                <div class="ms-2"><i class="fas fa-user fa-2x text-gray-200"></i></div>
                             </div>
-                            <div class="ms-2"><i class="fas fa-dollar-sign fa-2x text-gray-200"></i></div>
-                        </div>
+                        
+                        {% elif request.user.role == 2 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-primary mb-1">Total Transaction (Pending)</div>
+                                    <div class="h5">{{total_tran_pending_branch}}</div>
+                                    {% comment %} <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-up"></i>
+                                        12%
+                                    </div> {% endcomment %}
+                                </div>
+                                <div class="ms-2"><i class="fas fa-user fa-2x text-gray-200"></i></div>
+                            </div>
+                        {% else %}
+                            {% if user_top_currencies %}
+                                {% with first_currency=user_top_currencies.0 %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-bold text-primary mb-1">Total Exchnaged: {{ first_currency.0 }}</div>
+                                            <div class="h5">{{ first_currency.1 }}</div>
+                                        </div>
+                                        <div class="ms-2"><i class="fas fa-dollar-sign fa-2x text-gray-200"></i></div>
+                                    </div>
+                                {% endwith %}
+                            {% endif %} 
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -48,17 +75,43 @@
                 <!-- Dashboard info widget 2-->
                 <div class="card border-start-lg border-start-secondary h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <div class="small fw-bold text-secondary mb-1">Average sale price</div>
-                                <div class="h5">$27.00</div>
-                                <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
-                                    <i class="me-1" data-feather="trending-down"></i>
-                                    3%
+                        {% if request.user.role == 0 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-secondary mb-1">Total Transaction (Approved)</div>
+                                    <div class="h5">{{total_transaction}}</div>
+                                    {% comment %} <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-down"></i>
+                                        3%
+                                    </div> {% endcomment %}
                                 </div>
+                                <div class="ms-2"><i class="fas fa-tag fa-2x text-gray-200"></i></div>
                             </div>
-                            <div class="ms-2"><i class="fas fa-tag fa-2x text-gray-200"></i></div>
-                        </div>
+                        {% elif request.user.role == 2 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-secondary mb-1">Total Transaction (Approved)</div>
+                                    <div class="h5">{{total_tran_approved_branch}}</div>
+                                    {% comment %} <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-down"></i>
+                                        3%
+                                    </div> {% endcomment %}
+                                </div>
+                                <div class="ms-2"><i class="fas fa-tag fa-2x text-gray-200"></i></div>
+                            </div>
+                        {% else %}
+                            {% if user_top_currencies %}
+                                {% with first_currency=user_top_currencies.1 %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-bold text-primary mb-1">Total Exchnaged: {{ first_currency.0 }}</div>
+                                            <div class="h5">{{ first_currency.1 }}</div>
+                                        </div>
+                                        <div class="ms-2"><i class="fas fa-dollar-sign fa-2x text-gray-200"></i></div>
+                                    </div>
+                                {% endwith %}
+                            {% endif %}      
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -66,17 +119,43 @@
                 <!-- Dashboard info widget 3-->
                 <div class="card border-start-lg border-start-success h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <div class="small fw-bold text-success mb-1">Clicks</div>
-                                <div class="h5">11,291</div>
-                                <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
-                                    <i class="me-1" data-feather="trending-up"></i>
-                                    12%
+                        {% if request.user.role == 0 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-success mb-1">Total NPR Exchanged</div>
+                                    <div class="h5">Rs {{sum_of_equivalent_npr}}/-</div>
+                                    {% comment %} <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-up"></i>
+                                        12%
+                                    </div> {% endcomment %}
                                 </div>
+                                <div class="ms-2"><i class="fas fa-mouse-pointer fa-2x text-gray-200"></i></div>
                             </div>
-                            <div class="ms-2"><i class="fas fa-mouse-pointer fa-2x text-gray-200"></i></div>
-                        </div>
+                        {% elif request.user.role == 2 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-success mb-1">Total NPR Exchanged</div>
+                                    <div class="h5">Rs {{sum_NPR_branch}}/-</div>
+                                    {% comment %} <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-up"></i>
+                                        12%
+                                    </div> {% endcomment %}
+                                </div>
+                                <div class="ms-2"><i class="fas fa-mouse-pointer fa-2x text-gray-200"></i></div>
+                            </div>
+                        {% else %}
+                            {% if user_top_currencies %}
+                                {% with first_currency=user_top_currencies.2 %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-bold text-primary mb-1">Total Exchnaged: {{ first_currency.0 }}</div>
+                                            <div class="h5">{{ first_currency.1 }}</div>
+                                        </div>
+                                        <div class="ms-2"><i class="fas fa-dollar-sign fa-2x text-gray-200"></i></div>
+                                    </div>
+                                {% endwith %}
+                            {% endif %} 
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -84,17 +163,43 @@
                 <!-- Dashboard info widget 4-->
                 <div class="card border-start-lg border-start-info h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <div class="small fw-bold text-info mb-1">Conversion rate</div>
-                                <div class="h5">1.23%</div>
-                                <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
-                                    <i class="me-1" data-feather="trending-down"></i>
-                                    1%
+                        {% if request.user.role == 0 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-info mb-1">Conversion rate</div>
+                                    <div class="h5">{{conversion_ratio}}%</div>
+                                    {% comment %} <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-down"></i>
+                                        1%
+                                    </div> {% endcomment %}
                                 </div>
+                                <div class="ms-2"><i class="fas fa-percentage fa-2x text-gray-200"></i></div>
                             </div>
-                            <div class="ms-2"><i class="fas fa-percentage fa-2x text-gray-200"></i></div>
-                        </div>
+                        {% elif request.user.role == 2 %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-info mb-1">Conversion rate</div>
+                                    <div class="h5">{{conversion_ratio_branch}}%</div>
+                                    {% comment %} <div class="text-xs fw-bold text-danger d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-down"></i>
+                                        1%
+                                    </div> {% endcomment %}
+                                </div>
+                                <div class="ms-2"><i class="fas fa-percentage fa-2x text-gray-200"></i></div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small fw-bold text-success mb-1">Total Exchanged: NPR</div>
+                                    <div class="h5">Rs {{sum_NPR_self}}/-</div>
+                                    {% comment %} <div class="text-xs fw-bold text-success d-inline-flex align-items-center">
+                                        <i class="me-1" data-feather="trending-up"></i>
+                                        12%
+                                    </div> {% endcomment %}
+                                </div>
+                                <div class="ms-2"><i class="fas fa-mouse-pointer fa-2x text-gray-200"></i></div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -43,8 +43,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.db import connection
 from openpyxl.styles import Font
-from django.db.models import Q, Subquery
-
+from django.db.models import Q, Subquery, Sum, F
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 system_date = datetime.date.today()
 system_time = datetime.datetime.now().time()
@@ -63,36 +62,104 @@ def home(request):
 @login_required
 def dashboard(request):
     template_name = 'core/dashboard/dashboard.html'
-    list_times = FCYRateMaster.objects.filter(date=system_date)
-    filtered_data = None
-    api_data = None 
-    alert_message = None  # Initialize alert_message variable
-
-    try:
-        last_object = FCYRateMaster.objects.latest('id')
-        filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
-        
-        api_url = f"https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=20&from={system_date}&to={system_date}"
-        response = requests.get(api_url, timeout=10)  # Set a timeout (e.g., 10 seconds)
-
-        if response.status_code == 200:
-            api_data = response.json()
-        else:
-            api_data = None 
-    except ObjectDoesNotExist:
-        last_object = None
-        alert_message = "No data available in FCYRateMaster"
-    except requests.RequestException as e:
-        # Handle connection timeout or other request-related errors
-        alert_message = f"Error: {e}. Unable to fetch data from NRB API."
     
-    context = {
-        'filtered_data': filtered_data,
-        'list_times': list_times,
-        'api_data': api_data,
-        'last_object': last_object,
-        'alert_message': alert_message  # Include alert_message in the context
-    }
+    try:
+        total_users = UserAccount.objects.count()
+
+        total_transaction = FCYExchangeRequestMaster.objects.filter(status='Approved').count()
+        total_transaction_pending = FCYExchangeRequestMaster.objects.filter(status='Forwarded').count()
+
+        total_tran_pending_branch = FCYExchangeRequestMaster.objects.filter(status='Forwarded', preferredBranch=request.user.branch).count()
+        total_tran_approved_branch = FCYExchangeRequestMaster.objects.filter(status='Approved', preferredBranch=request.user.branch).count()
+
+        total_tran = total_transaction + total_transaction_pending
+        total_tran_branch = total_tran_pending_branch + total_tran_approved_branch
+
+        conversion_ratio = (total_transaction / total_tran) * 100 if total_tran != 0 else 0
+        conversion_ratio_branch = (total_tran_approved_branch / total_tran_branch) * 100 if total_tran_branch != 0 else 0
+
+        sum_of_equivalent_npr = FCYExchangeRequestMaster.objects.filter(status='Approved').aggregate(Sum('totalEquivalentNPR'))
+        sum_NPR = sum_of_equivalent_npr.get('totalEquivalentNPR__sum') or 0
+
+        sum_of_equivalent_npr_branch = FCYExchangeRequestMaster.objects.filter(status='Approved', preferredBranch=request.user.branch).aggregate(Sum('totalEquivalentNPR'))
+        sum_NPR_branch = sum_of_equivalent_npr_branch.get('totalEquivalentNPR__sum') or 0
+        
+        sum_of_equivalent_npr_self = FCYExchangeRequestMaster.objects.filter(status='Approved', enteredBy=request.user.email).aggregate(Sum('totalEquivalentNPR'))
+        sum_NPR_self = sum_of_equivalent_npr_self.get('totalEquivalentNPR__sum') or 0
+        
+
+        raw_query = """
+            SELECT d.currency, SUM(d.unit * d.deno) AS total_units, m."enteredBy"
+            FROM public.core_fcyexchangerequestmaster AS m
+            INNER JOIN public.core_fcydenomastertable AS d ON d.masterid = m.id
+            WHERE m.status = 'Approved' AND m."enteredBy" = %s
+            GROUP BY d.currency, m."enteredBy"
+            ORDER BY total_units DESC
+            LIMIT 3;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(raw_query, [request.user.email])
+            rows = cursor.fetchall()
+        print(rows)
+        
+        list_times = FCYRateMaster.objects.filter(date=system_date)
+        filtered_data = None
+        api_data = None
+        alert_message = None
+
+        try:
+            last_object = FCYRateMaster.objects.latest('id')
+            filtered_data = FCYExchangeRate.objects.filter(masterid=last_object.pk)
+            
+            api_url = f"https://www.nrb.org.np/api/forex/v1/rates?page=1&per_page=20&from={system_date}&to={system_date}"
+            response = requests.get(api_url, timeout=10)
+
+            if response.status_code == 200:
+                api_data = response.json()
+            else:
+                api_data = None 
+        except ObjectDoesNotExist:
+            last_object = None
+            alert_message = "No data available in FCYRateMaster"
+        except requests.RequestException as e:
+            alert_message = f"Error: {e}. Unable to fetch data from NRB API."
+
+        context = {
+            'filtered_data': filtered_data,
+            'list_times': list_times,
+            'api_data': api_data,
+            'last_object': last_object,
+            'total_users': total_users,
+            'total_transaction': total_transaction,
+            'sum_of_equivalent_npr': sum_NPR,
+            'conversion_ratio': round(conversion_ratio, 2),
+            'total_tran_pending_branch': total_tran_pending_branch,
+            'total_tran_approved_branch': total_tran_approved_branch,
+            'sum_NPR_branch': sum_NPR_branch,
+            'conversion_ratio_branch': round(conversion_ratio_branch, 2),
+            'sum_NPR_self':sum_NPR_self,
+            'user_top_currencies': rows,
+            'alert_message': alert_message
+        }
+    except ObjectDoesNotExist:
+        context = {
+            'filtered_data': None,
+            'list_times': None,
+            'api_data': None,
+            'last_object': None,
+            'total_users': 0,
+            'total_transaction': 0,
+            'sum_of_equivalent_npr': 0,
+            'conversion_ratio': 0.00,
+            'total_tran_pending_branch': 0,
+            'total_tran_approved_branch': 0,
+            'sum_NPR_branch': 0,
+            'conversion_ratio_branch': 0.00,
+            'sum_NPR_self': 0,
+            'alert_message': "Error: Data does not exist or cannot be retrieved."
+        }
+
     return render(request, template_name, context)
 
 
@@ -419,6 +486,7 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
     def get(self, request, id):
         try:
             fcyrequest = FCYExchangeRequestMaster.objects.filter(id=id).exclude(status='Deleted').values().get()
+            userdetails = UserAccount.objects.filter(email=fcyrequest['enteredBy']).values().get()
         except FCYExchangeRequestMaster.DoesNotExist:
             messages.error(request, "Requested ID does not exist.")
             return redirect('/dashboard/')  # Redirect to the home page or any appropriate page
@@ -452,7 +520,7 @@ class FCYRequestDetailView(LoginRequiredMixin, View):
                     'rate': item.rate,
                     'equivalent_npr': item.equivalentNPR
                 })
-            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency)})
+            return render(request, self.template_name, {'fcyrequest': fcyrequest, 'data_by_currency': dict(data_by_currency), 'userdetails':userdetails})
         else:
             messages.error(request, "Unauthorized User")
             return redirect('/dashboard/')
