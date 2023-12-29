@@ -16,5 +16,6 @@ urlpatterns = [
     path('getdenorate/', views.getdenowiserate, name='getdenorate'),
     path('getexchnagereceipt/<int:id>/', views.generate_pdf_receipt, name='getreceipt'),
     path('batchdump/<int:id>/', views.generate_xls_batch, name='batchdump'),
+    path('downloadreport/', views.generate_xls_deno_report, name='denoreportdump'),
     path('update_fcy_data/<int:fcy_id>/<int:masterId>/', views.update_fcy_data, name='update_fcy_data'),
 ]

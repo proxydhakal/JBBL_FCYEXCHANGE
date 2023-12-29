@@ -139,7 +139,7 @@
                             <div class="collapse" id="collapseDashboards2" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
                                     {% if request.user.is_superuser or request.user.role == 2 %}
-                                    <a class="nav-link" href="{% url 'createfcyexchange' %}">
+                                    <a class="nav-link" href="{% url 'denoreportdump' %}">
                                         Daily Deno Report
                                     </a>
                                     {% endif %}

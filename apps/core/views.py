@@ -1143,3 +1143,49 @@ class FCYExchnageRateView(LoginRequiredMixin, View):
             'date_filtered_data': filtered_data,
         }
         return render(request, self.template_name, context)
+
+
+@login_required
+def generate_xls_deno_report(request):
+    raw_query = """
+        SELECT d.currency, SUM(d.unit * d.deno) AS total_units
+        FROM public.core_fcyexchangerequestmaster AS m
+        INNER JOIN public.core_fcydenomastertable AS d ON d.masterid = m.id
+        WHERE m.status = 'Approved' AND m."preferredBranch" = %s AND m."date" = %s
+        GROUP BY d.currency
+        ORDER BY total_units DESC
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query, [request.user.branch, system_date])
+        rows = cursor.fetchall()
+        
+    wb = Workbook()
+    ws = wb.active  # Get the active sheet
+    # Add some data to the Excel file
+    ws['A1'] = 'CURRENCY'
+    ws['B1'] = 'TOTAL UNIT'
+    
+    for cell in ws["1:1"]:
+        cell.font = Font(bold=True)
+    data = []
+    for row in rows:
+        row_data = (
+            row[0],
+            row[1],   
+           
+        )
+        data.append(row_data)
+        
+    for row_num, row_data in enumerate(data, start=2):
+        ws.cell(row=row_num, column=1).value = row_data[0]
+        ws.cell(row=row_num, column=2).value = row_data[1]
+
+    # Set the response content type for an Excel file
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="Branch Deno Report-{system_date}.xlsx"'
+
+    # Save the workbook to the response
+    wb.save(response)
+
+    return response
