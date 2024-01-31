@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    image: jbbl_fcy_app:latest
+    container_name: jbbl_fcy_app_container
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    command: bash -c "source .env && gunicorn --bind :8000 --workers 2 --threads 8 --timeout 0 JBBL_FCYEXCHANGE.wsgi:application"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./static:/app/static
+    networks:
+      - app-network
+
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: fcyexchnage
+      POSTGRES_USER: proxy
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
